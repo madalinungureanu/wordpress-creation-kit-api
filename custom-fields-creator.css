@@ -1,0 +1,75 @@
+#mb-ajax-loading{
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+	background:url(images/ajax-loader.gif) center center no-repeat;	z-index:999;
+}
+
+.mbedit span{
+	padding:0px 5px;
+	background:url(images/settings.png) center center no-repeat;
+}
+.mbdelete span{
+	padding:0px 5px;
+	background:url(images/delete.png) center center no-repeat;
+}
+.mbadd{
+	display:inline-block !important;
+	padding:10px 20px !important;
+}
+.mbadd span{
+	padding:0px 5px;
+	background:url(images/plus.png) center center no-repeat;
+}
+.mbupdate{
+	display:inline-block !important;
+	padding:10px 20px !important;
+}
+.mbupdate span{
+	padding:2px 8px;
+	background:url(images/save.png) center center no-repeat;
+}
+
+.mb-list-entry-fields{
+	list-style:none;
+}
+
+.mb-table-container tr:nth-child(2n+1) {
+    background-color:#FCFCFC;
+}
+
+.mb-table-container tr:last-child td {
+    border-bottom: 0 none;
+}
+
+.mb-table-container tr  td {
+    background: none repeat scroll 0 0 transparent;
+    border-bottom: 1px solid #EDEDED;
+    border-right: 1px solid #EDEDED;
+    padding: 8px;
+    position: relative;
+}
+
+.mb-table-container tr td:last-child {
+    border-right: 0 none;
+}
+
+.mb-table-container thead > tr > th {
+    border-right: 1px solid #E1E1E1;
+}
+
+.mb-table-container tr > th:last-child {
+    border-right: 0 none;
+}
+
+.mb-textarea{
+	width:60%;
+	max-width:600px;
+	height:130px;
+}
+.mb-text-input{
+	width:40%;
+	max-width:400px;
+}
