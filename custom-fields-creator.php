@@ -134,7 +134,47 @@ class Custom_Fields_Creator{
 		echo self::cfc_output_meta_content($metabox['args']['meta_name'], $post->ID, $metabox['args']['meta_array']);
 	}
 	
-
+	/**
+	 * The function used to create a form element
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $details Contains the details for the field.	 
+	 * @param string $value Contains input value;
+	 * @return string $element input element html string.
+	 */
+	 
+	function cfc_output_form_field($details, $value = '' ){
+		$element = '';
+		
+		if($details['type'] == 'text'){
+			$element .= '<input type="text" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
+		} 
+		
+		 if($details['type'] == 'textarea'){
+			$element .= '<textarea name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'"  style="vertical-align:top;" class="mb-textarea mb-field">'. $value .'</textarea>';
+		}
+		
+		if($details['type'] == 'upload'){
+			$element .= '<input id="'. esc_attr($meta.$details['title']) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
+			$element .= '<a id="upload_'. esc_attr(strtolower($details['title'])) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. esc_js(strtolower($meta.$details['title'])).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
+			$element .= '<script type="text/javascript">';
+				$element .= 'window.'. strtolower($meta.$details['title']) .' = jQuery(\'#'. $meta.$details['title'].'\');';
+			$element .= '</script>';
+		}
+		
+		if($details['type'] != 'upload'){
+			$element .= '<label for="'. esc_attr($details['title']) .'">'. ucfirst($details['title']) .'</label>';
+		}
+		
+		if( !empty( $details['description'] ) ){
+			$element .= '<p class="description">'. $details['description'].'</p>';
+		}
+		
+		return $element;
+				
+	}
+	
 		
 	/**
 	 * The function used to create the form for adding records
@@ -157,24 +197,7 @@ class Custom_Fields_Creator{
 		foreach ($fields as $details ){			
 			?>
 				<li>
-					<?php if($details['type'] == 'text'): ?>
-						<input type="text" name="<?php echo esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ); ?>" value="" class="mb-text-input mb-field"/>
-					<?php endif; ?>
-					
-					<?php if($details['type'] == 'textarea'): ?>
-						<textarea name="<?php echo esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ); ?>"  style="vertical-align:top;" class="mb-textarea mb-field"></textarea>
-					<?php endif; ?>
-					
-					<?php if($details['type'] == 'upload'): ?>
-						<input id="<?php echo esc_attr($meta.$details['title']); ?>" type="text" size="36" name="<?php echo esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ); ?>" value="" class="mb-text-input mb-field"/>
-						<a id="upload_<?php echo esc_attr(strtolower($details['title'])); ?>_button" class="button" onclick="tb_show('', 'media-upload.php?type=file&amp;mb_type=<?php echo esc_js(strtolower($meta.$details['title'])); ?>&amp;TB_iframe=true');">Upload <?php echo $details['title']; ?> </a>
-						<script type="text/javascript">
-							window.<?php echo strtolower($meta.$details['title']); ?> = jQuery('#<?php echo $meta.$details['title'];?>');
-						</script>
-					<?php endif; ?>
-					<?php if($details['type'] != 'upload'): ?>
-					<label for="<?php echo esc_attr($details['title']); ?>"><?php echo ucfirst($details['title']); ?></label>
-					<?php endif; ?>
+					<?php echo self::cfc_output_form_field( $details ) ?>
 				</li>
 			<?php
 		}
@@ -276,6 +299,8 @@ class Custom_Fields_Creator{
 				$details = $fields[$i];
 				$form .= '<li>';
 				
+				$form .= self::cfc_output_form_field( $details, $value ); 
+				/*
 				if ($details['type'] == 'text') { 
 					$form .= '<input type="text" name="'.esc_attr($key).'" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
 				}
@@ -285,7 +310,7 @@ class Custom_Fields_Creator{
 				if ($details['type'] == 'upload'){
 					$form .= '<input name="'.esc_attr($key).'" style="vertical-align:top;" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
 				}
-				$form .= ' <label for="'.esc_attr($key).'">'.$details['title'].'</label>';
+				$form .= ' <label for="'.esc_attr($key).'">'.$details['title'].'</label>';*/
 				$form .= '</li>';
 				$i++;
 			}
