@@ -139,13 +139,20 @@ class Custom_Fields_Creator{
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $meta Meta name.	 
 	 * @param array $details Contains the details for the field.	 
 	 * @param string $value Contains input value;
+	 * @param string $context Context where the function is used. Depending on it some actions are preformed.;
 	 * @return string $element input element html string.
 	 */
 	 
-	function cfc_output_form_field($details, $value = '' ){
+	function cfc_output_form_field( $meta, $details, $value = '', $context = '' ){
 		$element = '';
+		
+		if( $context == 'edit_form' ){
+			$edit_class = '.mb-table-container ';
+			$var_prefix = 'edit';
+		}
 		
 		if($details['type'] == 'text'){
 			$element .= '<input type="text" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
@@ -157,9 +164,9 @@ class Custom_Fields_Creator{
 		
 		if($details['type'] == 'upload'){
 			$element .= '<input id="'. esc_attr($meta.$details['title']) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
-			$element .= '<a id="upload_'. esc_attr(strtolower($details['title'])) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. esc_js(strtolower($meta.$details['title'])).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
-			$element .= '<script type="text/javascript">';
-				$element .= 'window.'. strtolower($meta.$details['title']) .' = jQuery(\'#'. $meta.$details['title'].'\');';
+			$element .= '<a id="upload_'. esc_attr(strtolower($details['title'])) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. $var_prefix  . esc_js(strtolower($meta.$details['title'])).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
+			$element .= '<script type="text/javascript">';				
+				$element .= 'window.'. $var_prefix . strtolower($meta.$details['title']) .' = jQuery(\''.$edit_class.'#'. $meta.$details['title'].'\');';
 			$element .= '</script>';
 		}
 		
@@ -197,7 +204,7 @@ class Custom_Fields_Creator{
 		foreach ($fields as $details ){			
 			?>
 				<li>
-					<?php echo self::cfc_output_form_field( $details ) ?>
+					<?php echo self::cfc_output_form_field( $meta, $details ); ?>
 				</li>
 			<?php
 		}
@@ -206,6 +213,62 @@ class Custom_Fields_Creator{
 		</ul>
 		</div>
 		<?php
+	}
+	
+	/**
+	 * The function used to display a form to update a reccord from meta
+	 *
+	 * @since 1.0.0
+	 *	 
+	 * @param string $meta It is used in get_post_meta($id, $meta, $results);. Use '_' prefix if you don't want 
+	 * the meta to apear in custom fields box.
+	 * @param int $id Post id
+	 * @param int $element_id The id of the reccord. The meta is stored as array(array());
+	 */
+	function mb_update_form($fields, $meta, $id, $element_id){
+		
+		$update_nonce = wp_create_nonce( 'cfc-update-entry' );
+		
+		// create the $fields_myname variable dinamically so we can use the global one
+		//$fields = 'fields_'.$meta;
+		//global $$fields;
+		
+		$results = get_post_meta($id, $meta, true);
+		$nr = count($results[$element_id])+4;
+		$form = '';
+		$form .= '<tr id="update_container_'.$meta.'_'.$element_id.'"><td colspan="'.$nr.'">';
+		
+		if($results != null){
+			$i = 0;
+			$form .= '<ul class="mb-list-entry-fields">';
+			
+			foreach($results[$element_id] as $key => $value){				
+				$details = $fields[$i];
+				$form .= '<li>';
+				
+				$form .= self::cfc_output_form_field( $meta, $details, $value, 'edit_form' ); 
+				/*
+				if ($details['type'] == 'text') { 
+					$form .= '<input type="text" name="'.esc_attr($key).'" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
+				}
+				if ($details['type'] == 'textarea'){
+					$form .= '<textarea name="'.esc_attr($key).'" style="vertical-align:top;" class="mb-textarea mb-field">' . $value . '</textarea>'; 
+				}
+				if ($details['type'] == 'upload'){
+					$form .= '<input name="'.esc_attr($key).'" style="vertical-align:top;" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
+				}
+				$form .= ' <label for="'.esc_attr($key).'">'.$details['title'].'</label>';*/
+				$form .= '</li>';
+				$i++;
+			}
+			$form .= '<li><a href="javascript:void(0)" class="button mbupdate" onclick=\'updateMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($element_id).'", "'.esc_js($update_nonce).'")\'><span>&nbsp;</span></a></li>';
+			$form .= '</ul>';
+		}
+		//var_dump($$fields);
+		$form .= '</td></tr>';
+
+		
+		return $form;
 	}
 
 		
@@ -265,65 +328,6 @@ class Custom_Fields_Creator{
 		$list .= '</table>';
 		return $list;
 	}
-
-
-
-	/**
-	 * The function used to display a form to update a reccord from meta
-	 *
-	 * @since 1.0.0
-	 *	 
-	 * @param string $meta It is used in get_post_meta($id, $meta, $results);. Use '_' prefix if you don't want 
-	 * the meta to apear in custom fields box.
-	 * @param int $id Post id
-	 * @param int $element_id The id of the reccord. The meta is stored as array(array());
-	 */
-	function mb_update_form($fields, $meta, $id, $element_id){
-		
-		$update_nonce = wp_create_nonce( 'cfc-update-entry' );
-		
-		// create the $fields_myname variable dinamically so we can use the global one
-		//$fields = 'fields_'.$meta;
-		//global $$fields;
-		
-		$results = get_post_meta($id, $meta, true);
-		$nr = count($results[$element_id])+4;
-		$form = '';
-		$form .= '<tr id="update_container_'.$meta.'_'.$element_id.'"><td colspan="'.$nr.'">';
-		
-		if($results != null){
-			$i = 0;
-			$form .= '<ul class="mb-list-entry-fields">';
-			
-			foreach($results[$element_id] as $key => $value){				
-				$details = $fields[$i];
-				$form .= '<li>';
-				
-				$form .= self::cfc_output_form_field( $details, $value ); 
-				/*
-				if ($details['type'] == 'text') { 
-					$form .= '<input type="text" name="'.esc_attr($key).'" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
-				}
-				if ($details['type'] == 'textarea'){
-					$form .= '<textarea name="'.esc_attr($key).'" style="vertical-align:top;" class="mb-textarea mb-field">' . $value . '</textarea>'; 
-				}
-				if ($details['type'] == 'upload'){
-					$form .= '<input name="'.esc_attr($key).'" style="vertical-align:top;" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
-				}
-				$form .= ' <label for="'.esc_attr($key).'">'.$details['title'].'</label>';*/
-				$form .= '</li>';
-				$i++;
-			}
-			$form .= '<li><a href="javascript:void(0)" class="button mbupdate" onclick=\'updateMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($element_id).'", "'.esc_js($update_nonce).'")\'><span>&nbsp;</span></a></li>';
-			$form .= '</ul>';
-		}
-		//var_dump($$fields);
-		$form .= '</td></tr>';
-
-		
-		return $form;
-	}
-
 
 	/* enque the js*/
 	function cfc_print_scripts($hook){
