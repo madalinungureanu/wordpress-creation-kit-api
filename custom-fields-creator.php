@@ -19,10 +19,12 @@ Usage Example 1:
 
 
 $fint = array( 
-	array( 'type' => 'text', 'title' => 'Title', 'description' => 'Description for this input' ), 
-	array( 'type' => 'textarea', 'title' => 'Description' ), 
-	array( 'type' => 'upload', 'title' => 'Image', 'description' => 'Upload a image' ), 
-	array( 'type' => 'upload', 'title' => 'Video', 'description' => 'Upload a video' ) 
+		array( 'type' => 'text', 'title' => 'Title', 'description' => 'Description for this input' ), 
+		array( 'type' => 'textarea', 'title' => 'Description' ), 
+		array( 'type' => 'upload', 'title' => 'Image', 'description' => 'Upload a image' ), 
+		array( 'type' => 'select', 'title' => 'Select This', 'options' => array( 'Option 1', 'Option 2', 'Option 3' ) ),	
+		array( 'type' => 'checkbox', 'title' => 'Check This', 'options' => array( 'Option 1', 'Option 2', 'Option 3' ) ), 	
+		array( 'type' => 'radio', 'title' => 'Radio This', 'options' => array( 'Radio 1', 'Radio 2', 'Radio 3' ) ), 
 	);
 
 $args = array(
@@ -35,6 +37,10 @@ $args = array(
 
 new Custom_Fields_Creator( $args );
 
+
+On the frontend:
+
+$meta = get_post_meta( $post->ID, 'rmscontent', true );
 
 */
 
@@ -158,9 +164,51 @@ class Custom_Fields_Creator{
 			$element .= '<input type="text" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
 		} 
 		
-		 if($details['type'] == 'textarea'){
+		if($details['type'] == 'textarea'){
 			$element .= '<textarea name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'"  style="vertical-align:top;" class="mb-textarea mb-field">'. $value .'</textarea>';
 		}
+		
+		if($details['type'] == 'select'){
+			$element .= '<select name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" class="mb-select mb-field" >';
+				$element .= '<option value="default">Select</option>';
+				
+				if( !empty( $details['options'] ) ){
+						foreach( $details['options'] as $option ){
+							$element .= '<option value="'. $option .'"  '. selected( $option, $value, false ) .' >'. $option .'</option>';
+						}
+				}				
+				
+			$element .= '</select>';
+		}
+		
+		if($details['type'] == 'checkbox'){
+			
+			if( !empty( $details['options'] ) ){
+					foreach( $details['options'] as $option ){
+						$found = false;
+						
+						if ( strpos($value, $option) !== false ) 
+							$found = true;
+						$element .= '<input type="checkbox" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-checkbox mb-field" />'. $option .' ' ;
+					}
+			}
+			
+		}
+		
+		if($details['type'] == 'radio'){
+			
+			if( !empty( $details['options'] ) ){
+					foreach( $details['options'] as $option ){
+						$found = false;
+						
+						if ( strpos($value, $option) !== false ) 
+							$found = true;
+						$element .= '<input type="radio" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-radio mb-field" />'. $option .' ' ;
+					}
+			}
+			
+		}		
+		
 		
 		if($details['type'] == 'upload'){
 			$element .= '<input id="'. esc_attr($meta.$details['title']) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';

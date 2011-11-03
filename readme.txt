@@ -6,7 +6,11 @@ Usage Example 1
 		array( 'type' => 'text', 'title' => 'Title', 'description' => 'Description for this input' ), 
 		array( 'type' => 'textarea', 'title' => 'Description' ), 
 		array( 'type' => 'upload', 'title' => 'Image', 'description' => 'Upload a image' ), 
-		array( 'type' => 'upload', 'title' => 'Video', 'description' => 'Upload a video' ) 
+		array( 'type' => 'select', 'title' => 'Select This', 'options' => array( 'Option 1', 'Option 2', 'Option 3' ) ),
+	
+		array( 'type' => 'checkbox', 'title' => 'Check This', 'options' => array( 'Option 1', 'Option 2', 'Option 3' ) ), 
+	
+		array( 'type' => 'radio', 'title' => 'Radio This', 'options' => array( 'Radio 1', 'Radio 2', 'Radio 3' ) ), 
 	);
 
 	$args = array(
@@ -20,6 +24,13 @@ Usage Example 1
 	new Custom_Fields_Creator( $args );
 
  ?> 
+
+For Frontend use like this:
+
+<?php $meta = get_post_meta( $post->ID, 'rmscontent', true ); ?>
+
+
+
 
 Default Parameters
 

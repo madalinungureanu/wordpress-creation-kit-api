@@ -10,8 +10,24 @@ function addMeta(value, id, nonce){
 	var values = {};
 	
 	jQuery('#'+value+' .mb-field').each(function(){
+	
 		var key = jQuery(this).attr('name');
-		values[key.toString()] = jQuery(this).val().toString();
+		
+		if(jQuery(this).attr('type') == 'checkbox' || jQuery(this).attr('type') == 'radio' ) {
+			
+			if( typeof values[key.toString()] === "undefined" )
+				values[key.toString()] = '';
+			
+			if(jQuery(this).is(':checked')){
+				if( values[key.toString()] == '' )
+					values[key.toString()] += jQuery(this).val().toString();
+				else
+					values[key.toString()] += ', ' + jQuery(this).val().toString();
+			}			
+		}
+		
+		else		
+			values[key.toString()] = jQuery(this).val().toString();
 	});	
 	
 	jQuery.post( ajaxurl ,  { action:"cfc_add_meta", meta:value, id:id, values:values, _ajax_nonce:nonce}, function(response) {	
@@ -27,7 +43,10 @@ function addMeta(value, id, nonce){
 					mb_sortable_elements();
 					
 				jQuery('#'+value+' .mb-field').each(function(){
-					jQuery(this).val('');				
+					if(jQuery(this).attr('type') == 'checkbox' || jQuery(this).attr('type') == 'radio' ) 
+						jQuery(this).removeAttr( 'checked' );	
+					else
+						jQuery(this).val('');					
 				});				
 				jQuery('#'+value).parent().css('opacity','1');	
 				
@@ -143,8 +162,24 @@ function updateMeta(value, id, element_id, nonce){
 	jQuery('#'+value).parent().css({'opacity':'0.4', 'position':'relative'}).append('<div id="mb-ajax-loading"></div>');
 	var values = {};	
 	jQuery('#update_container_'+value+'_'+element_id+' .mb-field').each(function(){
-		var key = jQuery(this).attr('name');
-		values[key.toString()] = jQuery(this).val().toString();
+		var key = jQuery(this).attr('name');		
+		
+		if(jQuery(this).attr('type') == 'checkbox' || jQuery(this).attr('type') == 'radio' ) {
+			
+			if( typeof values[key.toString()] === "undefined" )
+				values[key.toString()] = '';
+			
+			if(jQuery(this).is(':checked')){
+				if( values[key.toString()] == '' )
+					values[key.toString()] += jQuery(this).val().toString();
+				else
+					values[key.toString()] += ', ' + jQuery(this).val().toString();
+			}			
+		}
+		
+		else		
+			values[key.toString()] = jQuery(this).val().toString();
+		
 	});	
 	
 	jQuery.post( ajaxurl ,  { action:"cfc_update_meta", meta:value, id:id, element_id:element_id, values:values, _ajax_nonce:nonce}, function(response) {			
