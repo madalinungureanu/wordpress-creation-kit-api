@@ -110,10 +110,10 @@ function mb_sortable_elements() {
 		jQuery( ".mb-table-container tbody" ).not( jQuery( ".mb-table-container.single tbody" ) ).sortable({
 			update: function(event, ui){
 				
-				var value = jQuery(".mb-table-container").prev().attr('id');
-				var id = jQuery(".mb-table-container").attr('post');
+				var value = jQuery(event.target).parent().prev().attr('id');
+				var id = jQuery(event.target).parent().attr('post');
 				
-				var result = jQuery(".mb-table-container tbody").sortable('toArray');
+				var result = jQuery(event.target).sortable('toArray');
 				
 				var values = {};
 				for(var i in result)
