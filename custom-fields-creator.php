@@ -379,7 +379,7 @@ class Custom_Fields_Creator{
 
 	/* enque the js*/
 	function cfc_print_scripts($hook){
-		if('post.php' == $hook){
+		if('post.php' == $hook || 'post-new.php' == $hook){
 			wp_enqueue_script( 'jquery-ui-draggable' );
 			wp_enqueue_script( 'jquery-ui-droppable' );
 			wp_enqueue_script( 'jquery-ui-sortable' );
