@@ -84,8 +84,10 @@ $post_id
 $single 
 	(boolean) (optional) Set this to true if you don't want a repeater box and you will be able to enter just one value.
 
-    Default: None 
+    Default: false 
 	
+wpml_compatibility
+	(boolean) (optional) Set this to true if you want to enable wpml compatibility
 	
 How to add into a plugin:
 
@@ -97,3 +99,10 @@ How to add into a plugin:
 	require_once('custom-fields-creator/custom-fields-creator.php');
 
 4. Use the API as in Exampe 1, in your plugin file or functions or whatever fits the situation.
+
+
+WPML Compatibility
+
+When wpml_compatibility is true on a meta box, besides saving the contents of the box in one serialized custom field, we create automatically a custom field for every field in every entry. We do this because WPML can't handle serialized custom fields and also we will get good control on what actions we want to perform (don't translate, copy, translate ) on each of the fields. 
+
+After the fields are translated with Icanlcalize and we have the translated post in our system, we can go on the translated post and press the "Syncronize CFC Translation" button which will create the serialized array from the individual custom fields.
