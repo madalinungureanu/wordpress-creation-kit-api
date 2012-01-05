@@ -107,7 +107,7 @@ function removeMeta(value, id, element_id, nonce){
 
 /* reorder elements through drag and drop */
 function mb_sortable_elements() {		
-		jQuery( ".mb-table-container tbody" ).not( jQuery( ".mb-table-container.single tbody" ) ).sortable({
+		jQuery( ".mb-table-container tbody" ).not( jQuery( ".mb-table-container.single tbody, .mb-table-container.not-sortable tbody" ) ).sortable({
 			update: function(event, ui){
 				
 				var value = jQuery(this).parent().prev().attr('id');

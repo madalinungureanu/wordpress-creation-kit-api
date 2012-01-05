@@ -55,7 +55,9 @@ class Wordpress_Creation_Kit{
 							'page_template' => '',
 							'post_id' => '',
 							'single' => false,
-							'wpml_compatibility' => false
+							'wpml_compatibility' => false,
+							'sortable' => true,
+							'context' => 'post_meta'
 						);
 	private $args;	
 	
@@ -108,42 +110,50 @@ class Wordpress_Creation_Kit{
 	//add metabox using wordpress api
 
 	function wck_add_metabox() {	
-	
-		if( $this->args['post_id'] == '' && $this->args['page_template'] == '' )
-			add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
-		else{
-			$post_id = $_GET['post'] ? $_GET['post'] : $_POST['post_ID'] ;
-			
-			if( $this->args['post_id'] != '' && $this->args['page_template'] != '' ){
-				$template_file = get_post_meta($post_id,'_wp_page_template',TRUE);				
-				if( $this->args['post_id'] == $post_id && $template_file == $this->args['page_template'] )
-					add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
-			}
+		if( $this->args['context'] == 'post_meta' ){
+			if( $this->args['post_id'] == '' && $this->args['page_template'] == '' )
+				add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
 			else{
-			
-				if( $this->args['post_id'] != '' ){
-					if( $this->args['post_id'] == $post_id ){
-						$post_type = get_post_type( $post_id );
-						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $post_type, 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
-					}
-				}
+				$post_id = $_GET['post'] ? $_GET['post'] : $_POST['post_ID'] ;
 				
-				if(  $this->args['page_template'] != '' ){
-					$template_file = get_post_meta($post_id,'_wp_page_template',TRUE);	
-					if ( $template_file == $this->args['page_template'] )
-						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
+				if( $this->args['post_id'] != '' && $this->args['page_template'] != '' ){
+					$template_file = get_post_meta($post_id,'_wp_page_template',TRUE);				
+					if( $this->args['post_id'] == $post_id && $template_file == $this->args['page_template'] )
+						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
+				}
+				else{
+				
+					if( $this->args['post_id'] != '' ){
+						if( $this->args['post_id'] == $post_id ){
+							$post_type = get_post_type( $post_id );
+							add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $post_type, 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
+						}
+					}
+					
+					if(  $this->args['page_template'] != '' ){
+						$template_file = get_post_meta($post_id,'_wp_page_template',TRUE);	
+						if ( $template_file == $this->args['page_template'] )
+							add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
+					}			
+					
 				}			
 				
-			}			
-			
-		}		
-		
+			}		
+		}
+		else if( $this->args['context'] == 'option' ){
+			add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
+		}
 	}	
 
 	function wck_content($post, $metabox){		
 		//output the add form 
 		if( $this->args['single'] ){
-			$meta_val = get_post_meta( $post->ID, $metabox['args']['meta_name'], true );
+			
+			if( $this->args['context'] == 'post_meta' )
+				$meta_val = get_post_meta( $post->ID, $metabox['args']['meta_name'], true );
+			else if ( $this->args['context'] == 'option' )
+				$meta_val = get_option( $metabox['args']['meta_name'] );			
+			
 			if( empty( $meta_val ) )
 				self::create_add_form($metabox['args']['meta_array'], $metabox['args']['meta_name'], $post);
 		}
@@ -293,8 +303,13 @@ class Wordpress_Creation_Kit{
 		// create the $fields_myname variable dinamically so we can use the global one
 		//$fields = 'fields_'.$meta;
 		//global $$fields;
+				
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
 		
-		$results = get_post_meta($id, $meta, true);
+		
 		$nr = count($results[$element_id])+4;
 		$form = '';
 		$form .= '<tr id="update_container_'.$meta.'_'.$element_id.'"><td colspan="'.$nr.'">';
@@ -345,14 +360,18 @@ class Wordpress_Creation_Kit{
 	function wck_output_meta_content($meta, $id, $fields){
 		
 		$edit_nonce = wp_create_nonce( 'wck-edit-entry' );
-		$delete_nonce = wp_create_nonce( 'wck-delete-entry' );
+		$delete_nonce = wp_create_nonce( 'wck-delete-entry' );		
 		
-		$results = get_post_meta($id, $meta, true);
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
 		
 		$list = '';
 		$list .= '<table id="container_'.esc_attr($meta).'" class="mb-table-container widefat';
 		
 		if( $this->args['single'] ) $list .= ' single';
+		if( !$this->args['sortable'] ) $list .= ' not-sortable';
 		
 		$list .= '" post="'.esc_attr($id).'">';		
 		
@@ -414,12 +433,21 @@ class Wordpress_Creation_Kit{
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$values = $_POST['values'];
-		$results = get_post_meta($id, $meta, true);
+		
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
+		
 		$results[] = $values;
-		update_post_meta($id, $meta, $results);
+		
+		if( $this->args['context'] == 'post_meta' )
+			update_post_meta($id, $meta, $results);
+		else if ( $this->args['context'] == 'option' )
+			update_option( $meta, $results );
 		
 		/* if wpml_compatibility is true add for each entry separete post meta for every element of the form  */
-		if( $this->args['wpml_compatibility'] ){
+		if( $this->args['wpml_compatibility'] && $this->args['context'] == 'post_meta' ){
 			
 			$meta_suffix = count( $results );
 			$i=1;
@@ -439,13 +467,25 @@ class Wordpress_Creation_Kit{
 		$id = absint($_POST['id']);
 		$element_id = $_POST['element_id'];	
 		$values = $_POST['values'];
-		$results = get_post_meta($id, $meta, true);
-		$results[$element_id] = $values;
-		update_post_meta($id, $meta, $results);
 		
+		
+		
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
+		
+		$results[$element_id] = $values;
+		
+		
+		
+		if( $this->args['context'] == 'post_meta' )
+			update_post_meta($id, $meta, $results);
+		else if ( $this->args['context'] == 'option' )
+			update_option( $meta, $results );
 		
 		/* if wpml_compatibility is true update the coresponding post metas for every element of the form  */
-		if( $this->args['wpml_compatibility'] ){
+		if( $this->args['wpml_compatibility'] && $this->args['context'] == 'post_meta' ){
 			
 			$meta_suffix = $element_id + 1;
 			$i = 1;
@@ -492,17 +532,27 @@ class Wordpress_Creation_Kit{
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$element_id = absint($_POST['element_id']);	
-		$results = get_post_meta($id, $meta, true);
+		
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
+		
 		$old_results = $results;
 		unset($results[$element_id]);
 		/* reset the keys for the array */
 		$results = array_values($results);
-		update_post_meta($id, $meta, $results);
+		
+		if( $this->args['context'] == 'post_meta' )
+			update_post_meta($id, $meta, $results);
+		else if ( $this->args['context'] == 'option' )
+			update_option( $meta, $results );
+		
 		
 		
 		/* TODO: optimize so that it updates from the deleted element forward */
 		/* if wpml_compatibility is true delete the coresponding post metas */
-		if( $this->args['wpml_compatibility'] ){			
+		if( $this->args['wpml_compatibility'] && $this->args['context'] == 'post_meta' ){			
 			
 			$meta_suffix = 1;			
 						
@@ -553,9 +603,13 @@ class Wordpress_Creation_Kit{
 	function wck_reorder_meta(){
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
-		$elements_id = $_POST['values'];	
+		$elements_id = $_POST['values'];			
 		
-		$results = get_post_meta($id, $meta, true);
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
+		
 		$new_results = array();
 		foreach($elements_id as $element_id){
 			$new_results[] = $results[$element_id];
@@ -563,10 +617,14 @@ class Wordpress_Creation_Kit{
 		
 		$results = $new_results;
 		
-		update_post_meta($id, $meta, $results);
+		if( $this->args['context'] == 'post_meta' )
+			update_post_meta($id, $meta, $results);
+		else if ( $this->args['context'] == 'option' )
+			update_option( $meta, $results );
+		
 		
 		/* if wpml_compatibility is true reorder all the coresponding post metas  */
-		if( $this->args['wpml_compatibility'] ){			
+		if( $this->args['wpml_compatibility'] && $this->args['context'] == 'post_meta' ){			
 			
 			$meta_suffix = 1;
 			foreach( $new_results as $result ){
