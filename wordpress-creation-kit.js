@@ -30,10 +30,10 @@ function addMeta(value, id, nonce){
 			values[key.toString()] = jQuery(this).val().toString();
 	});	
 	
-	jQuery.post( ajaxurl ,  { action:"cfc_add_meta"+value, meta:value, id:id, values:values, _ajax_nonce:nonce}, function(response) {	
+	jQuery.post( ajaxurl ,  { action:"wck_add_meta"+value, meta:value, id:id, values:values, _ajax_nonce:nonce}, function(response) {	
 			//alert(response);
 			/* refresh the list */
-			jQuery.post( ajaxurl ,  { action:"cfc_refresh_list"+value, meta:value, id:id}, function(response) {					
+			jQuery.post( ajaxurl ,  { action:"wck_refresh_list"+value, meta:value, id:id}, function(response) {					
 				
 				jQuery('#container_'+value).replaceWith(response);
 				
@@ -67,18 +67,18 @@ function removeMeta(value, id, element_id, nonce){
 	if( response == true ){
 	
 		jQuery('#'+value).parent().css({'opacity':'0.4', 'position':'relative'}).append('<div id="mb-ajax-loading"></div>');
-		jQuery.post( ajaxurl ,  { action:"cfc_remove_meta"+value, meta:value, id:id, element_id:element_id, _ajax_nonce:nonce}, function(response) {
+		jQuery.post( ajaxurl ,  { action:"wck_remove_meta"+value, meta:value, id:id, element_id:element_id, _ajax_nonce:nonce}, function(response) {
 		
 				/* If single add the form */
 				if( jQuery( '#container_'+value ).hasClass('single') ){
-					jQuery.post( ajaxurl ,  { action:"cfc_add_form"+value, meta:value, id:id }, function(response) {			
+					jQuery.post( ajaxurl ,  { action:"wck_add_form"+value, meta:value, id:id }, function(response) {			
 						jQuery( '#container_'+value ).before( response );
 						jQuery( '#'+value ).addClass('single');	
 					});
 				}
 				
 				/* refresh the list */
-				jQuery.post( ajaxurl ,  { action:"cfc_refresh_list"+value, meta:value, id:id}, function(response) {	
+				jQuery.post( ajaxurl ,  { action:"wck_refresh_list"+value, meta:value, id:id}, function(response) {	
 					jQuery('#container_'+value).replaceWith(response);
 					
 					jQuery('.mb-table-container tbody td').css('width', function(){ return jQuery(this).width() });
@@ -123,8 +123,8 @@ function mb_sortable_elements() {
 				
 				jQuery('#'+value).parent().css({'opacity':'0.4', 'position':'relative'}).append('<div id="mb-ajax-loading"></div>');
 				
-				jQuery.post( ajaxurl ,  { action:"cfc_reorder_meta"+value, meta:value, id:id, values:values}, function(response) {			
-					jQuery.post( ajaxurl ,  { action:"cfc_refresh_list"+value, meta:value, id:id}, function(response) {
+				jQuery.post( ajaxurl ,  { action:"wck_reorder_meta"+value, meta:value, id:id, values:values}, function(response) {			
+					jQuery.post( ajaxurl ,  { action:"wck_refresh_list"+value, meta:value, id:id}, function(response) {
 							jQuery('#container_'+value).replaceWith(response);
 							
 							jQuery('.mb-table-container tbody td').css('width', function(){ return jQuery(this).width() });
@@ -149,7 +149,7 @@ function showUpdateFormMeta(value, id, element_id, nonce){
 	
 	jQuery( '#container_' + value + " tbody" ).sortable("disable");
 	
-	jQuery.post( ajaxurl ,  { action:"cfc_show_update"+value, meta:value, id:id, element_id:element_id, _ajax_nonce:nonce}, function(response) {	
+	jQuery.post( ajaxurl ,  { action:"wck_show_update"+value, meta:value, id:id, element_id:element_id, _ajax_nonce:nonce}, function(response) {	
 			//jQuery('#container_'+value+' #element_'+element_id).append(response);
 			jQuery(response).insertAfter('#container_'+value+' #element_'+element_id);
 			jQuery('#'+value).parent().css('opacity','1');
@@ -182,10 +182,10 @@ function updateMeta(value, id, element_id, nonce){
 		
 	});	
 	
-	jQuery.post( ajaxurl ,  { action:"cfc_update_meta"+value, meta:value, id:id, element_id:element_id, values:values, _ajax_nonce:nonce}, function(response) {			
+	jQuery.post( ajaxurl ,  { action:"wck_update_meta"+value, meta:value, id:id, element_id:element_id, values:values, _ajax_nonce:nonce}, function(response) {			
 			jQuery('#update_container_'+value+'_'+element_id).remove();
 			/* refresh the list */
-			jQuery.post( ajaxurl ,  { action:"cfc_refresh_list"+value, meta:value, id:id}, function(response) {	
+			jQuery.post( ajaxurl ,  { action:"wck_refresh_list"+value, meta:value, id:id}, function(response) {	
 				jQuery('#container_'+value).replaceWith(response);
 				
 				jQuery('.mb-table-container tbody td').css('width', function(){ return jQuery(this).width() });
@@ -199,8 +199,8 @@ function updateMeta(value, id, element_id, nonce){
 }
 
 /* function syncs the translation */
-function cfcSyncTranslation(id){
-	jQuery.post( ajaxurl ,  { action:"cfc_sync_translation", id:id}, function(response) {			
+function wckSyncTranslation(id){
+	jQuery.post( ajaxurl ,  { action:"wck_sync_translation", id:id}, function(response) {			
 			if( response == 'syncsuccess' )
 				window.location.reload();			
 		});	

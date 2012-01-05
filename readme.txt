@@ -21,7 +21,7 @@ Usage Example 1
 		'meta_array' => $fint	
 	);
 
-	new Custom_Fields_Creator( $args );
+	new Wordpress_Creation_Kit( $args );
 
  ?> 
 
@@ -92,7 +92,7 @@ wpml_compatibility
 How to add into a plugin:
 
 1. Copy the foldder "custom-fields-creator" into the plugin dir
-2. Change the class name "Custom_Fields_Creator" if multiple plugins use custom-fields-creator on the same site.
+2. Change the class name "Wordpress_Creation_Kit" if multiple plugins use custom-fields-creator on the same site.
 3. Include "custom-fields-creator.php" into the plugin file 
 	
 	/* include Custom Fields Creator API */
@@ -105,4 +105,4 @@ WPML Compatibility
 
 When wpml_compatibility is true on a meta box, besides saving the contents of the box in one serialized custom field, we create automatically a custom field for every field in every entry. We do this because WPML can't handle serialized custom fields and also we will get good control on what actions we want to perform (don't translate, copy, translate ) on each of the fields. 
 
-After the fields are translated with Icanlcalize and we have the translated post in our system, we can go on the translated post and press the "Syncronize CFC Translation" button which will create the serialized array from the individual custom fields.
+After the fields are translated with Icanlcalize and we have the translated post in our system, we can go on the translated post and press the "Syncronize WCK Translation" button which will create the serialized array from the individual custom fields.

@@ -35,7 +35,7 @@ $args = array(
 	'meta_array' => $fint	
 );
 
-new Custom_Fields_Creator( $args );
+new Wordpress_Creation_Kit( $args );
 
 
 On the frontend:
@@ -44,7 +44,7 @@ $meta = get_post_meta( $post->ID, 'rmscontent', true );
 
 */
 
-class Custom_Fields_Creator{
+class Wordpress_Creation_Kit{
 	
 	private $defaults = array(
 							'metabox_id' => '',
@@ -61,65 +61,77 @@ class Custom_Fields_Creator{
 	
 	
 	/* Constructor method for the class. */
-	function __construct( $args ) {		
+	function __construct( $args ) {	
+
+		/* Global that will hold all the arguments for all the custom boxes */
+		global $wck_objects;
 		
 		/* Merge the input arguments and the defaults. */
 		$this->args = wp_parse_args( $args, $this->defaults );
 		
+		/* Add the settings for this box to the global object */
+		$wck_objects[$this->args['metabox_id']] = $this->args;
+		
 		/*print scripts*/
-		add_action('admin_enqueue_scripts', array( &$this, 'cfc_print_scripts' ));
+		add_action('admin_enqueue_scripts', array( &$this, 'wck_print_scripts' ));
 		
 		/*print styles */
-		add_action('admin_print_styles', array( &$this, 'cfc_print_css' ));
+		add_action('admin_print_styles', array( &$this, 'wck_print_css' ));
 		
 		// Set up the AJAX hooks
-		add_action("wp_ajax_cfc_add_meta".$this->args['meta_name'], array( &$this, 'cfc_add_meta') );
-		add_action("wp_ajax_cfc_update_meta".$this->args['meta_name'], array( &$this, 'cfc_update_meta') );
-		add_action("wp_ajax_cfc_show_update".$this->args['meta_name'], array( &$this, 'cfc_show_update_form') );
-		add_action("wp_ajax_cfc_refresh_list".$this->args['meta_name'], array( &$this, 'cfc_refresh_list') );
-		add_action("wp_ajax_cfc_add_form".$this->args['meta_name'], array( &$this, 'cfc_add_form') );
-		add_action("wp_ajax_cfc_remove_meta".$this->args['meta_name'], array( &$this, 'cfc_remove_meta') );
+		add_action("wp_ajax_wck_add_meta".$this->args['meta_name'], array( &$this, 'wck_add_meta') );
+		add_action("wp_ajax_wck_update_meta".$this->args['meta_name'], array( &$this, 'wck_update_meta') );
+		add_action("wp_ajax_wck_show_update".$this->args['meta_name'], array( &$this, 'wck_show_update_form') );
+		add_action("wp_ajax_wck_refresh_list".$this->args['meta_name'], array( &$this, 'wck_refresh_list') );
+		add_action("wp_ajax_wck_add_form".$this->args['meta_name'], array( &$this, 'wck_add_form') );
+		add_action("wp_ajax_wck_remove_meta".$this->args['meta_name'], array( &$this, 'wck_remove_meta') );
 		//add_action("wp_ajax_swap_meta_mb", array( & $this, 'mb_swap_meta') );
-		add_action("wp_ajax_cfc_reorder_meta".$this->args['meta_name'], array( &$this, 'cfc_reorder_meta') );
+		add_action("wp_ajax_wck_reorder_meta".$this->args['meta_name'], array( &$this, 'wck_reorder_meta') );
 		
 		/* modify Insert into post button */
-		add_action('admin_head-media-upload-popup', array( &$this, 'cfc_media_upload_popup_head') );
+		add_action('admin_head-media-upload-popup', array( &$this, 'wck_media_upload_popup_head') );
 		
 		/* custom functionality for upload video */
-		add_filter('media_send_to_editor', array( &$this, 'cfc_media_send_to_editor' ), 15, 2 );
+		add_filter('media_send_to_editor', array( &$this, 'wck_media_send_to_editor' ), 15, 2 );
 				
-		add_action('add_meta_boxes', array( &$this, 'cfc_add_metabox') );	
+		add_action('add_meta_boxes', array( &$this, 'wck_add_metabox') );	
+		
+		/* hook to add a side metabox with the Syncronize translation button */
+		add_action('add_meta_boxes', array( &$this, 'wck_add_sync_translation_metabox' ) );
+		
+		/* ajax hook the syncronization function */
+		add_action("wp_ajax_wck_sync_translation", array( &$this, 'wck_sync_translation_ajax' ) );
 		
 	}
 	
 	
 	//add metabox using wordpress api
 
-	function cfc_add_metabox() {	
+	function wck_add_metabox() {	
 	
 		if( $this->args['post_id'] == '' && $this->args['page_template'] == '' )
-			add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'cfc_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
+			add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
 		else{
 			$post_id = $_GET['post'] ? $_GET['post'] : $_POST['post_ID'] ;
 			
 			if( $this->args['post_id'] != '' && $this->args['page_template'] != '' ){
 				$template_file = get_post_meta($post_id,'_wp_page_template',TRUE);				
 				if( $this->args['post_id'] == $post_id && $template_file == $this->args['page_template'] )
-					add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'cfc_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
+					add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
 			}
 			else{
 			
 				if( $this->args['post_id'] != '' ){
 					if( $this->args['post_id'] == $post_id ){
 						$post_type = get_post_type( $post_id );
-						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'cfc_content' ), $post_type, 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
+						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $post_type, 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array'] ) );
 					}
 				}
 				
 				if(  $this->args['page_template'] != '' ){
 					$template_file = get_post_meta($post_id,'_wp_page_template',TRUE);	
 					if ( $template_file == $this->args['page_template'] )
-						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'cfc_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
+						add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), 'page', 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
 				}			
 				
 			}			
@@ -128,7 +140,7 @@ class Custom_Fields_Creator{
 		
 	}	
 
-	function cfc_content($post, $metabox){		
+	function wck_content($post, $metabox){		
 		//output the add form 
 		if( $this->args['single'] ){
 			$meta_val = get_post_meta( $post->ID, $metabox['args']['meta_name'], true );
@@ -138,7 +150,7 @@ class Custom_Fields_Creator{
 		else
 			self::create_add_form($metabox['args']['meta_array'], $metabox['args']['meta_name'], $post);
 		//output the entries
-		echo self::cfc_output_meta_content($metabox['args']['meta_name'], $post->ID, $metabox['args']['meta_array']);
+		echo self::wck_output_meta_content($metabox['args']['meta_name'], $post->ID, $metabox['args']['meta_array']);
 	}
 	
 	/**
@@ -153,7 +165,7 @@ class Custom_Fields_Creator{
 	 * @return string $element input element html string.
 	 */
 	 
-	function cfc_output_form_field( $meta, $details, $value = '', $context = '' ){
+	function wck_output_form_field( $meta, $details, $value = '', $context = '' ){
 		$element = '';
 		
 		if( $context == 'edit_form' ){
@@ -245,7 +257,7 @@ class Custom_Fields_Creator{
 	 * @param object $post Post object
 	 */
 	function create_add_form($fields, $meta, $post){
-		$nonce = wp_create_nonce( 'cfc-add-meta' );
+		$nonce = wp_create_nonce( 'wck-add-meta' );
 		?>
 		<div id="<?php echo $meta ?>" style="padding:10px 0;" <?php if( $this->args['single'] ) echo 'class="single"' ?>>
 		<ul class="mb-list-entry-fields">
@@ -253,7 +265,7 @@ class Custom_Fields_Creator{
 		foreach ($fields as $details ){			
 			?>
 				<li>
-					<?php echo self::cfc_output_form_field( $meta, $details ); ?>
+					<?php echo self::wck_output_form_field( $meta, $details ); ?>
 				</li>
 			<?php
 		}
@@ -276,7 +288,7 @@ class Custom_Fields_Creator{
 	 */
 	function mb_update_form($fields, $meta, $id, $element_id){
 		
-		$update_nonce = wp_create_nonce( 'cfc-update-entry' );
+		$update_nonce = wp_create_nonce( 'wck-update-entry' );
 		
 		// create the $fields_myname variable dinamically so we can use the global one
 		//$fields = 'fields_'.$meta;
@@ -295,7 +307,7 @@ class Custom_Fields_Creator{
 				$details = $fields[$i];
 				$form .= '<li>';
 				
-				$form .= self::cfc_output_form_field( $meta, $details, $value, 'edit_form' ); 
+				$form .= self::wck_output_form_field( $meta, $details, $value, 'edit_form' ); 
 				/*
 				if ($details['type'] == 'text') { 
 					$form .= '<input type="text" name="'.esc_attr($key).'" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
@@ -330,10 +342,10 @@ class Custom_Fields_Creator{
 	 * the meta to apear in custom fields box.
 	 * @param int $id Post id
 	 */
-	function cfc_output_meta_content($meta, $id, $fields){
+	function wck_output_meta_content($meta, $id, $fields){
 		
-		$edit_nonce = wp_create_nonce( 'cfc-edit-entry' );
-		$delete_nonce = wp_create_nonce( 'cfc-delete-entry' );
+		$edit_nonce = wp_create_nonce( 'wck-edit-entry' );
+		$delete_nonce = wp_create_nonce( 'wck-delete-entry' );
 		
 		$results = get_post_meta($id, $meta, true);
 		
@@ -379,26 +391,26 @@ class Custom_Fields_Creator{
 	}
 
 	/* enque the js*/
-	function cfc_print_scripts($hook){
+	function wck_print_scripts($hook){
 		if('post.php' == $hook || 'post-new.php' == $hook){
 			wp_enqueue_script( 'jquery-ui-draggable' );
 			wp_enqueue_script( 'jquery-ui-droppable' );
 			wp_enqueue_script( 'jquery-ui-sortable' );
-			wp_enqueue_script('custom-fields-creator', plugins_url('/custom-fields-creator.js', __FILE__), array('jquery') );
+			wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery') );
 		}
 	}
 	
 
 	/* print css*/
-	function cfc_print_css(){
-		wp_register_style('custom-fields-creator-css', plugins_url('/custom-fields-creator.css', __FILE__));
-		wp_enqueue_style('custom-fields-creator-css');	
+	function wck_print_css(){
+		wp_register_style('wordpress-creation-kit-css', plugins_url('/wordpress-creation-kit.css', __FILE__));
+		wp_enqueue_style('wordpress-creation-kit-css');	
 	}
 	
 
 	/* ajax add a reccord to the meta */
-	function cfc_add_meta(){
-		check_ajax_referer( "cfc-add-meta" );	
+	function wck_add_meta(){
+		check_ajax_referer( "wck-add-meta" );	
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$values = $_POST['values'];
@@ -412,7 +424,7 @@ class Custom_Fields_Creator{
 			$meta_suffix = count( $results );
 			$i=1;
 			foreach( $values as $name => $value ){
-				update_post_meta($id, 'cfcwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
+				update_post_meta($id, 'wckwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
 				$i++;
 			}
 		}
@@ -421,8 +433,8 @@ class Custom_Fields_Creator{
 	}
 
 	/* ajax update a reccord in the meta */
-	function cfc_update_meta(){
-		check_ajax_referer( "cfc-update-entry" );
+	function wck_update_meta(){
+		check_ajax_referer( "wck-update-entry" );
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$element_id = $_POST['element_id'];	
@@ -438,7 +450,7 @@ class Custom_Fields_Creator{
 			$meta_suffix = $element_id + 1;
 			$i = 1;
 			foreach( $values as $name => $value ){
-				update_post_meta($id, 'cfcwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
+				update_post_meta($id, 'wckwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
 				$i++;
 			}
 		}
@@ -447,15 +459,15 @@ class Custom_Fields_Creator{
 	}
 
 	/* ajax to refresh the meta content */
-	function cfc_refresh_list(){
+	function wck_refresh_list(){
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
-		echo self::cfc_output_meta_content($meta, $id, $this->args['meta_array']);
+		echo self::wck_output_meta_content($meta, $id, $this->args['meta_array']);
 		exit;
 	}
 	
 	/* ajax to add the form for single */
-	function cfc_add_form(){		
+	function wck_add_form(){		
 		$meta = $_POST['meta'];
 		$id = absint( $_POST['id'] );
 		$post = get_post($id);
@@ -465,8 +477,8 @@ class Custom_Fields_Creator{
 	
 
 	/* ajax to show the update form */
-	function cfc_show_update_form(){
-		check_ajax_referer( "cfc-edit-entry" );
+	function wck_show_update_form(){
+		check_ajax_referer( "wck-edit-entry" );
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$element_id = $_POST['element_id'];	
@@ -475,8 +487,8 @@ class Custom_Fields_Creator{
 	}
 
 	/* ajax to remove a reccord from the meta */
-	function cfc_remove_meta(){
-		check_ajax_referer( "cfc-delete-entry" );
+	function wck_remove_meta(){
+		check_ajax_referer( "wck-delete-entry" );
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$element_id = absint($_POST['element_id']);	
@@ -497,7 +509,7 @@ class Custom_Fields_Creator{
 			foreach( $results as $result ){
 				$i = 1;
 				foreach ( $result as $name => $value){					
-					update_post_meta($id, 'cfcwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
+					update_post_meta($id, 'wckwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
 					$i++;
 				}
 				$meta_suffix++;			
@@ -509,7 +521,7 @@ class Custom_Fields_Creator{
 			foreach( $results as $result ){
 				$i = 1;
 				foreach ( $result as $name => $value){
-					delete_post_meta( $id, 'cfcwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i );
+					delete_post_meta( $id, 'wckwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i );
 					$i++;
 				}
 				break;
@@ -538,7 +550,7 @@ class Custom_Fields_Creator{
 	}*/
 
 	/* ajax to reorder records */
-	function cfc_reorder_meta(){
+	function wck_reorder_meta(){
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		$elements_id = $_POST['values'];	
@@ -560,7 +572,7 @@ class Custom_Fields_Creator{
 			foreach( $new_results as $result ){
 				$i = 1;
 				foreach ( $result as $name => $value){					
-					update_post_meta($id, 'cfcwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
+					update_post_meta($id, 'wckwpml_'.$meta.'_'.$name.'_'.$meta_suffix.'_'.$i, $value);
 					$i++;
 				}
 				$meta_suffix++;
@@ -572,7 +584,7 @@ class Custom_Fields_Creator{
 	}
 
 	/* modify Insert into post button */	
-	function cfc_media_upload_popup_head()
+	function wck_media_upload_popup_head()
 	{
 		if( ( isset( $_GET["mb_type"] ) ) )
 		{
@@ -628,7 +640,7 @@ class Custom_Fields_Creator{
 
 	/* custom functionality for upload video */
 
-	function cfc_media_send_to_editor($html, $id)
+	function wck_media_send_to_editor($html, $id)
 	{
 		parse_str($_POST["_wp_http_referer"], $arr_postinfo);
 		
@@ -653,13 +665,163 @@ class Custom_Fields_Creator{
 		}
 		
 	}
+	
+	/* WPML Compatibility */
+	
+	/**
+	 * Function that ads the side metabox with the Syncronize translation button. 
+	 * The meta box is only added if the lang attribute  is set and 
+	 * if any of the custom fields has the 'wckwpml' prefix.
+	 */
+	function wck_add_sync_translation_metabox(){
+		global $post;	
+			
+		if( isset( $_GET['lang'] ) ){
+			
+			$has_wck_with_wpml_compatibility = false;
+			$custom_field_keys = get_post_custom_keys( $post->ID );
+			foreach( $custom_field_keys as $custom_field_key ){
+				$custom_field_key = explode( '_', $custom_field_key );
+				if( $custom_field_key[0] == 'wckwpml' ){
+					$has_wck_with_wpml_compatibility = true;
+					break;
+				}
+			}
+			
+			if($has_wck_with_wpml_compatibility){
+				add_meta_box( 'wck_sync_translation', 'Syncronize WCK', array( &$this, 'wck_add_sync_box' ), $post->post_type, 'side', 'low' );
+			}
+			
+		}			
+	}
+
+	/**
+	 * Callback for the add_meta_box function that ads the "Syncronize WCK Translation" button.
+	 */
+	function wck_add_sync_box(){
+		global $post;
+		?>	
+		<span id="wck_sync" class="button" onclick="wckSyncTranslation(<?php echo $post->ID; ?>)"><?php _e( 'Syncronize WCK Translation', 'fustom_fields_creator' ) ?></span>
+		<?php 
+	}
+
+
+
+	/**
+	 * Function that recreates the serialized metas from the individual meta fields.
+	 */
+	function wck_sync_translation_ajax(){		
+			$post_id = $_POST['id'];		
+			
+			/* get all the custom fields keys for the post */
+			$custom_field_keys = (array)get_post_custom_keys( $post_id );	
+			
+			/* initialize an array that will hold all the arrays for all the wck boxes */
+			$wck_array = array();		
+			
+			/* go through all the custom fields and if it is a custom field created automaticaly for the translation add it to the  $wck_array array*/
+			foreach( $custom_field_keys as $cf ){
+				
+				$cf_name_array = explode( '_', $cf );
+				
+				/* a custom field added for the translation will have this form
+					'wckwpml_{meta name}_{field name}_{entry position}_{field position}'
+				*/
+				if( count( $cf_name_array ) >= 5 ){
+					
+					$cf_name = implode( '_', array_slice( $cf_name_array, 1, -3 ) );
+					
+					if( $cf_name_array[0] == 'wckwpml' ){
+						
+						$wck_key = $cf_name_array[ count($cf_name_array) -3 ];
+						$wck_position = $cf_name_array[ count($cf_name_array) -2 ];
+						$wck_field_position = $cf_name_array[ count($cf_name_array) -1 ];					
+						
+						/* "$wck_position - 1" is required because fields in wck by default start at 0 and the additional
+						translation fields start at 1 */
+						$wck_array[$cf_name][$wck_position - 1][$wck_field_position][$wck_key] = get_post_meta($post_id,$cf,true);
+						
+					}
+				}
+			}
+			
+			
+			
+			if( !empty( $wck_array ) ){
+				/* sort the array so that the entry order and fields order are synced */
+				self::deep_ksort( $wck_array );
+				
+				/* remove the field position level in the array because it was added just so we could keep the field 
+				order in place */
+				$wck_array = self::wck_reconstruct_array($wck_array);						
+				
+				/* add the translated meta to the post */
+				foreach( $wck_array as $wck_key => $wck_meta ){					
+					update_post_meta( $post_id, $wck_key, $wck_meta );					
+				}							
+				echo('syncsuccess');
+			}
+		
+		exit;
+	}
+
+	/**
+	 * Function that deep sorts a multy array by numeric key
+	 */ 
+	function deep_ksort(&$arr) {
+		ksort($arr);
+		foreach ($arr as &$a) {
+			if (is_array($a) && !empty($a)) {
+				self::deep_ksort($a);
+			}
+		}
+	}
+
+	/**
+	 * Function that removes the field position level 
+	 */ 
+	function wck_reconstruct_array($wck_array){	
+		foreach( $wck_array as $wck_array_key => $wck_meta ){								
+			foreach( $wck_meta as $wck_meta_key => $wck_entry ){
+				foreach( $wck_entry as $wck_entry_key => $wck_field ){
+					$wck_array[$wck_array_key][$wck_meta_key][key($wck_field)] = current($wck_field);
+					unset($wck_array[$wck_array_key][$wck_meta_key][$wck_entry_key]);					
+				}
+			}
+		}
+		return $wck_array;
+	}
+	
+	
+	function wck_get_meta_boxes( $screen = null ){
+		global $wp_meta_boxes, $wck_objects;	
+			
+		if ( empty( $screen ) )
+			$screen = get_current_screen();
+		elseif ( is_string( $screen ) )
+			$screen = convert_to_screen( $screen );	
+		
+		$page = $screen->id;	
+		
+		$wck_meta_boxes = array();
+		
+		if( !empty( $wck_objects ) && !empty( $wp_meta_boxes[$page]['normal']['low'] ) ){
+			foreach( $wck_objects as $key => $wck_object ){
+				if( array_key_exists( $key, $wp_meta_boxes[$page]['normal']['low'] ) )
+					$wck_meta_boxes[] = $key;
+			}
+		}
+		
+		return $wck_meta_boxes;
+	}
+	
 }
 
 /* WPML Compatibility */
-//add_filter('icl_data_from_pro_translation', 'cfc_wpml_get_translation');
-/*function cfc_wpml_get_translation($translation){
+//add_filter('icl_data_from_pro_translation', 'wck_wpml_get_translation');
+/*function wck_wpml_get_translation($translation){
 	global $sitepress_settings;
-	$sitepress_settings['cfc_wpml_translation'] = $translation;
+	$sitepress_settings['wck_wpml_translation'] = $translation;
 	
 	return $translation;
 }*/
@@ -667,8 +829,8 @@ class Custom_Fields_Creator{
 /*add_action('init', 'bnngjnfkjgn');
 function bnngjnfkjgn(){
 	global $sitepress_settings;
-	$cfc_wpml_translation = 'asdasdasdasfsadasdas';
-	$sitepress_settings['cfc_wpml_translation'] = 'nknd,fgjkdfljgd;lfgl;d';
+	$wck_wpml_translation = 'asdasdasdasfsadasdas';
+	$sitepress_settings['wck_wpml_translation'] = 'nknd,fgjkdfljgd;lfgl;d';
 	var_dump($sitepress_settings);
 }
 
@@ -678,27 +840,27 @@ function jkjkghjkgjhkjgkh(){
 	var_dump($sitepress_settings);
 }
 */
-//add_action( 'icl_pro_translation_saved', 'cfc_update_translation_meta_boxes', 10, 2 );
-/*function cfc_update_translation_meta_boxes($new_post_id, $translation){
+//add_action( 'icl_pro_translation_saved', 'wck_update_translation_meta_boxes', 10, 2 );
+/*function wck_update_translation_meta_boxes($new_post_id, $translation){
 	global $sitepress_settings;
-	//$translation = $sitepress_settings['cfc_wpml_translation'];
+	//$translation = $sitepress_settings['wck_wpml_translation'];
 	var_dump($translation);
 	
 	$custom_field_keys = get_post_custom_keys( $translation['original_id'] );
-	$cfc_array = array();
+	$wck_array = array();
 	
 	foreach((array)$sitepress_settings['translation-management']['custom_fields_translation'] as $cf => $op){
 		$cf_name_array = explode( '_', $cf );
 		if( count( $cf_name_array ) >= 4 ){
 			$cf_name = implode( '_', array_slice( $cf_name_array, 1, -2 ) );
 			
-			if( in_array( $cf_name, $custom_field_keys ) && $cf_name_array[0] == 'cfcwpml' ){
+			if( in_array( $cf_name, $custom_field_keys ) && $cf_name_array[0] == 'wckwpml' ){
 				
-				$cfc_position = $cf_name_array[ count($cf_name_array) -1 ];
-				$cfc_key = $cf_name_array[ count($cf_name_array) -2 ];
+				$wck_position = $cf_name_array[ count($cf_name_array) -1 ];
+				$wck_key = $cf_name_array[ count($cf_name_array) -2 ];
 				
 				if ($op == 1) 
-					$cfc_array[$cf_name][$cfc_position][$cfc_key] = get_post_meta($translation['original_id'],$cf,true);
+					$wck_array[$cf_name][$wck_position][$wck_key] = get_post_meta($translation['original_id'],$cf,true);
 				elseif( $op == 2 && isset($translation['field-'.$cf] ) ){
 					$field_translation = $translation['field-'.$cf];
 					$field_type = $translation['field-'.$cf.'-type'];
@@ -706,145 +868,18 @@ function jkjkghjkgjhkjgkh(){
 						$field_translation = str_replace ( '&#0A;', "\n", $field_translation );                                
 						// always decode html entities  eg decode &amp; to &
 						$field_translation = html_entity_decode($field_translation);
-						$cfc_array[$cf_name][$cfc_position][$cfc_key] = $field_translation;
+						$wck_array[$cf_name][$wck_position][$wck_key] = $field_translation;
 					}            
 				}
 			}
 		}		
 	}
 	
-	if( !empty( $cfc_array ) ){
-		foreach( $cfc_array as $cfc_key => $cfc_meta ){
-			update_post_meta( $new_post_id, $cfc_key, $cfc_meta );
+	if( !empty( $wck_array ) ){
+		foreach( $wck_array as $wck_key => $wck_meta ){
+			update_post_meta( $new_post_id, $wck_key, $wck_meta );
 		}
 	}	
 	
 }*/
-
-/* hook to add a side metabox with the Syncronize translation button */
-add_action('add_meta_boxes', 'cfc_add_sync_translation_metabox' );
-
-/**
- * Function that ads the side metabox with the Syncronize translation button. The meta box is only added if the lang attribute 
- * is set and if any of the custom fields has the 'cfcwpml' prefix.
- */
-function cfc_add_sync_translation_metabox(){
-	global $post;	
-		
-	if( isset( $_GET['lang'] ) ){
-		
-		$has_cfc_with_wpml_compatibility = false;
-		$custom_field_keys = get_post_custom_keys( $post->ID );
-		foreach( $custom_field_keys as $custom_field_key ){
-			$custom_field_key = explode( '_', $custom_field_key );
-			if( $custom_field_key[0] == 'cfcwpml' ){
-				$has_cfc_with_wpml_compatibility = true;
-				break;
-			}
-		}
-		
-		if($has_cfc_with_wpml_compatibility){
-			add_meta_box( 'cfc_sync_translation', 'Syncronize CFC', 'cfc_add_sync_box', $post->post_type, 'side', 'low' );
-		}
-		
-	}			
-}
-
-/**
- * Callback for the add_meta_box function that ads the "Syncronize CFC Translation" button.
- */
-function cfc_add_sync_box(){
-	global $post;
-    ?>	
-	<span id="cfc_sync" class="button" onclick="cfcSyncTranslation(<?php echo $post->ID; ?>)"><?php _e( 'Syncronize CFC Translation', 'fustom_fields_creator' ) ?></span>
-	<?php 
-}
-
-/* ajax hook the syncronization function */
-add_action("wp_ajax_cfc_sync_translation", 'cfc_sync_translation_ajax');
-
-/**
- * Function that recreates the serialized metas from the individual meta fields.
- */
-function cfc_sync_translation_ajax(){		
-		$post_id = $_POST['id'];		
-		
-		/* get all the custom fields keys for the post */
-		$custom_field_keys = (array)get_post_custom_keys( $post_id );	
-		
-		/* initialize an array that will hold all the arrays for all the cfc boxes */
-		$cfc_array = array();		
-		
-		/* go through all the custom fields and if it is a custom field created automaticaly for the translation add it to the  $cfc_array array*/
-		foreach( $custom_field_keys as $cf ){
-			
-			$cf_name_array = explode( '_', $cf );
-			
-			/* a custom field added for the translation will have this form
-				'cfcwpml_{meta name}_{field name}_{entry position}_{field position}'
-			*/
-			if( count( $cf_name_array ) >= 5 ){
-				
-				$cf_name = implode( '_', array_slice( $cf_name_array, 1, -3 ) );
-				
-				if( $cf_name_array[0] == 'cfcwpml' ){
-					
-					$cfc_key = $cf_name_array[ count($cf_name_array) -3 ];
-					$cfc_position = $cf_name_array[ count($cf_name_array) -2 ];
-					$cfc_field_position = $cf_name_array[ count($cf_name_array) -1 ];					
-					
-					/* "$cfc_position - 1" is required because fields in cfc by default start at 0 and the additional
-					translation fields start at 1 */
-					$cfc_array[$cf_name][$cfc_position - 1][$cfc_field_position][$cfc_key] = get_post_meta($post_id,$cf,true);
-					
-				}
-			}
-		}
-		
-		
-		
-		if( !empty( $cfc_array ) ){
-			/* sort the array so that the entry order and fields order are synced */
-			deep_ksort( $cfc_array );
-			
-			/* remove the field position level in the array because it was added just so we could keep the field 
-			order in place */
-			$cfc_array = cfc_reconstruct_array($cfc_array);						
-			
-			/* add the translated meta to the post */
-			foreach( $cfc_array as $cfc_key => $cfc_meta ){					
-				update_post_meta( $post_id, $cfc_key, $cfc_meta );					
-			}							
-			echo('syncsuccess');
-		}
-	
-	exit;
-}
-
-/**
- * Function that deep sorts a multy array by numeric key
- */ 
-function deep_ksort(&$arr) {
-    ksort($arr);
-    foreach ($arr as &$a) {
-        if (is_array($a) && !empty($a)) {
-            deep_ksort($a);
-        }
-    }
-}
-
-/**
- * Function that removes the field position level 
- */ 
-function cfc_reconstruct_array($cfc_array){	
-	foreach( $cfc_array as $cfc_array_key => $cfc_meta ){								
-		foreach( $cfc_meta as $cfc_meta_key => $cfc_entry ){
-			foreach( $cfc_entry as $cfc_entry_key => $cfc_field ){
-				$cfc_array[$cfc_array_key][$cfc_meta_key][key($cfc_field)] = current($cfc_field);
-				unset($cfc_array[$cfc_array_key][$cfc_meta_key][$cfc_entry_key]);					
-			}
-		}
-	}
-	return $cfc_array;
-}
 ?>
