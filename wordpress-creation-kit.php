@@ -411,11 +411,21 @@ class Wordpress_Creation_Kit{
 
 	/* enque the js*/
 	function wck_print_scripts($hook){
-		if('post.php' == $hook || 'post-new.php' == $hook){
-			wp_enqueue_script( 'jquery-ui-draggable' );
-			wp_enqueue_script( 'jquery-ui-droppable' );
-			wp_enqueue_script( 'jquery-ui-sortable' );
-			wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery') );
+		if( $this->args['context'] == 'post_meta' ) {
+			if( 'post.php' == $hook || 'post-new.php' == $hook){
+				wp_enqueue_script( 'jquery-ui-draggable' );
+				wp_enqueue_script( 'jquery-ui-droppable' );
+				wp_enqueue_script( 'jquery-ui-sortable' );
+				wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery') );
+			}
+		}
+		elseif( $this->args['context'] == 'option' ){
+			if( $this->args['post_type'] == $hook ){
+				wp_enqueue_script( 'jquery-ui-draggable' );
+				wp_enqueue_script( 'jquery-ui-droppable' );
+				wp_enqueue_script( 'jquery-ui-sortable' );
+				wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery') );
+			}
 		}
 	}
 	
@@ -940,4 +950,134 @@ function jkjkghjkgjhkjgkh(){
 	}	
 	
 }*/
+
+/*
+Helper class that creates admin menu pages ( both top level menu pages and submenu pages )
+Default Usage: 
+
+$args = array(
+			'page_type' => 'menu_page',
+			'page_title' => '',
+			'menu_title' => '',
+			'capability' => '',
+			'menu_slug' => '',
+			'icon_url' => '',
+			'position' => '',
+			'parent_slug' => ''			
+		);
+
+'page_type'		(string) (required) The type of page you want to add. Possible values: 'menu_page', 'submenu_page'
+'page_title' 	(string) (required) The text to be displayed in the title tags and header of 
+				the page when the menu is selected
+'menu_title'	(string) (required) The on-screen name text for the menu
+'capability'	(string) (required) The capability required for this menu to be displayed to
+				the user.
+'menu_slug'	    (string) (required) The slug name to refer to this menu by (should be unique 
+				for this menu).
+'icon_url'	    (string) (optional for 'page_type' => 'menu_page') The url to the icon to be used for this menu. 
+				This parameter is optional. Icons should be fairly small, around 16 x 16 pixels 
+				for best results.
+'position'	    (integer) (optional for 'page_type' => 'menu_page') The position in the menu order this menu 
+				should appear. 
+				By default, if this parameter is omitted, the menu will appear at the bottom 
+				of the menu structure. The higher the number, the lower its position in the menu. 
+				WARNING: if 2 menu items use the same position attribute, one of the items may be 
+				overwritten so that only one item displays!
+'parent_slug' 	(string) (required for 'page_type' => 'submenu_page' ) The slug name for the parent menu 
+				(or the file name of a standard WordPress admin page) For examples see http://codex.wordpress.org/Function_Reference/add_submenu_page $parent_slug parameter
+'priority'	    (int) (optional) How important your function is. Alter this to make your function 
+				be called before or after other functions. The default is 10, so (for example) setting it to 5 would make it run earlier and setting it to 12 would make it run later. 				
+
+public $hookname ( for required for 'page_type' => 'menu_page' ) string used internally to 
+				 track menu page callbacks for outputting the page inside the global $menu array
+				 ( for required for 'page_type' => 'submenu_page' ) The resulting page's hook_suffix,
+				 or false if the user does not have the capability required.  				
+*/
+
+class WCK_Page_Creator{
+
+	private $defaults = array(
+							'page_type' => 'menu_page',
+							'page_title' => '',
+							'menu_title' => '',
+							'capability' => '',
+							'menu_slug' => '',
+							'icon_url' => '',
+							'position' => '',
+							'parent_slug' => '',
+							'priority' => 10
+						);
+	private $args;
+	public $hookname;
+	
+	
+	/* Constructor method for the class. */
+	function __construct( $args ) {	
+
+		/* Global that will hold all the arguments for all the menu pages */
+		global $wck_pages;
+		
+		/* Merge the input arguments and the defaults. */
+		$this->args = wp_parse_args( $args, $this->defaults );
+		
+		/* Add the settings for this page to the global object */
+		$wck_pages[$this->args['page_title']] = $this->args;
+		
+		/* Hook the page function to 'admin_menu'. */
+		add_action( 'admin_menu', array( &$this, 'wck_page_init' ), $this->args['priority'] );				
+	}
+
+	
+	/**
+	 * Function that creates the admin page
+	 */
+	function wck_page_init(){			
+		
+		/* Create the page using either add_menu_page or add_submenu_page functions depending on the 'page_type' parameter. */
+		if( $this->args['page_type'] == 'menu_page' ){
+			$this->hookname = add_menu_page( $this->args['page_title'], $this->args['menu_title'], $this->args['capability'], $this->args['menu_slug'], array( &$this, 'wck_page_template' ), $this->args['icon_url'], $this->args['position'] );
+		}
+		else if( $this->args['page_type'] == 'submenu_page' ){
+			$this->hookname = add_submenu_page( $this->args['parent_slug'], $this->args['page_title'], $this->args['menu_title'], $this->args['capability'], $this->args['menu_slug'], array( &$this, 'wck_page_template' ) );
+		}
+
+		/* Create a hook for adding meta boxes. */
+		add_action( "load-{$this->hookname}", array( &$this, 'wck_settings_page_add_meta_boxes' ) );
+	}
+	
+	/**
+	 * Do action 'add_meta_boxes'. This hook isn't executed bu  default on a admin page so we have ot add it.
+	 */
+	function wck_settings_page_add_meta_boxes() {					
+		do_action( 'add_meta_boxes', $this->hookname );
+	}
+
+	/**
+	 * Outputs default template for the page. It contains placeholders for metaboxes. It also
+	 * provides two action hooks 'wck_before_meta_boxes' and 'wck_after_meta_boxes'.
+	 */
+	function wck_page_template(){		
+		?>		
+		<div class="wrap">			
+
+			<h2><?php echo $this->args['page_title'] ?></h2>			
+			
+			<div id="poststuff">
+			
+				<?php do_action( 'wck_before_meta_boxes', $this->hookname ); ?>
+				
+				<div class="metabox-holder">
+					<div class="post-box-container column-1 normal"><?php do_meta_boxes( $this->hookname, 'normal', null ); ?></div>
+					<div class="post-box-container column-2 side"><?php do_meta_boxes( $this->hookname, 'side', null ); ?></div>
+					<div class="post-box-container column-3 advanced"><?php do_meta_boxes( $this->hookname, 'advanced', null ); ?></div>
+				</div>			
+				
+				<?php do_action( 'wck_after_meta_boxes', $this->hookname ); ?>
+
+			</div><!-- #poststuff -->
+
+		</div><!-- .wrap -->
+		<?php
+	}
+}
 ?>
