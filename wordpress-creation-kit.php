@@ -44,7 +44,7 @@ $meta = get_post_meta( $post->ID, 'rmscontent', true );
 
 */
 
-class WCK_CPTC_Wordpress_Creation_Kit{
+class Wordpress_Creation_Kit{
 	
 	private $defaults = array(
 							'metabox_id' => '',
@@ -1020,7 +1020,7 @@ public $hookname ( for required for 'page_type' => 'menu_page' ) string used int
 				 or false if the user does not have the capability required.  				
 */
 
-class WCK_CPTC_WCK_Page_Creator{
+class WCK_Page_Creator{
 
 	private $defaults = array(
 							'page_type' => 'menu_page',
