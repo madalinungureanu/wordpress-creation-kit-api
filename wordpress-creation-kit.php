@@ -44,7 +44,7 @@ $meta = get_post_meta( $post->ID, 'rmscontent', true );
 
 */
 
-class Wordpress_Creation_Kit{
+class WCK_CPTC_Wordpress_Creation_Kit{
 	
 	private $defaults = array(
 							'metabox_id' => '',
@@ -75,10 +75,7 @@ class Wordpress_Creation_Kit{
 		$wck_objects[$this->args['metabox_id']] = $this->args;
 		
 		/*print scripts*/
-		add_action('admin_enqueue_scripts', array( &$this, 'wck_print_scripts' ));
-		
-		/*print styles */
-		add_action('admin_print_styles', array( &$this, 'wck_print_css' ));
+		add_action('admin_enqueue_scripts', array( &$this, 'wck_print_scripts' ));	
 		
 		// Set up the AJAX hooks
 		add_action("wp_ajax_wck_add_meta".$this->args['meta_name'], array( &$this, 'wck_add_meta') );
@@ -109,7 +106,10 @@ class Wordpress_Creation_Kit{
 	
 	//add metabox using wordpress api
 
-	function wck_add_metabox() {	
+	function wck_add_metabox() {
+		
+		global $wck_pages_hooknames;
+		
 		if( $this->args['context'] == 'post_meta' ){
 			if( $this->args['post_id'] == '' && $this->args['page_template'] == '' )
 				add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
@@ -140,8 +140,8 @@ class Wordpress_Creation_Kit{
 				
 			}		
 		}
-		else if( $this->args['context'] == 'option' ){
-			add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $this->args['post_type'], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
+		else if( $this->args['context'] == 'option' ){			
+			add_meta_box($this->args['metabox_id'], $this->args['metabox_title'], array( &$this, 'wck_content' ), $wck_pages_hooknames[$this->args['post_type']], 'normal', 'low',  array( 'meta_name' => $this->args['meta_name'], 'meta_array' => $this->args['meta_array']) );
 		}
 	}	
 
@@ -181,25 +181,36 @@ class Wordpress_Creation_Kit{
 		if( $context == 'edit_form' ){
 			$edit_class = '.mb-table-container ';
 			$var_prefix = 'edit';
+		}		
+		else{
+			if( !empty( $details['default'] ) )
+				$value = $details['default'];
 		}
 		
+		
+		$element .= '<label for="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" class="field-label">'. ucfirst($details['title']) .':</label>';
+		
+		$element .= '<div class="mb-right-column">';
+		
 		if($details['type'] == 'text'){
-			$element .= '<input type="text" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
+			$element .= '<input type="text" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
 		} 
 		
 		if($details['type'] == 'textarea'){
-			$element .= '<textarea name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'"  style="vertical-align:top;" class="mb-textarea mb-field">'. $value .'</textarea>';
+			$element .= '<textarea name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" style="vertical-align:top;" class="mb-textarea mb-field">'. $value .'</textarea>';
 		}
 		
 		if($details['type'] == 'select'){
-			$element .= '<select name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" class="mb-select mb-field" >';
+			$element .= '<select name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'"  id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" class="mb-select mb-field" >';
+			
+			if( !empty( $details['default-option'] ) && $details['default-option'] )
 				$element .= '<option value="default">Select</option>';
-				
-				if( !empty( $details['options'] ) ){
-						foreach( $details['options'] as $option ){
-							$element .= '<option value="'. $option .'"  '. selected( $option, $value, false ) .' >'. $option .'</option>';
-						}
-				}				
+			
+			if( !empty( $details['options'] ) ){
+					foreach( $details['options'] as $option ){
+						$element .= '<option value="'. $option .'"  '. selected( $option, $value, false ) .' >'. $option .'</option>';
+					}
+			}				
 				
 			$element .= '</select>';
 		}
@@ -212,7 +223,7 @@ class Wordpress_Creation_Kit{
 						
 						if ( strpos($value, $option) !== false ) 
 							$found = true;
-						$element .= '<input type="checkbox" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-checkbox mb-field" />'. $option .' ' ;
+						$element .= '<input type="checkbox" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' . $option ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-checkbox mb-field" /><label for="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' .$option ) ) ) .'">'. $option .'</label><br />' ;
 					}
 			}
 			
@@ -226,7 +237,7 @@ class Wordpress_Creation_Kit{
 						
 						if ( strpos($value, $option) !== false ) 
 							$found = true;
-						$element .= '<input type="radio" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-radio mb-field" />'. $option .' ' ;
+						$element .= '<input type="radio" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' . $option ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-radio mb-field" /><label for="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' .$option ) ) ) .'">'. $option .'</label><br />';
 					}
 			}
 			
@@ -234,20 +245,18 @@ class Wordpress_Creation_Kit{
 		
 		
 		if($details['type'] == 'upload'){
-			$element .= '<input id="'. esc_attr($meta.$details['title']) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
-			$element .= '<a id="upload_'. esc_attr(strtolower($details['title'])) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. $var_prefix  . esc_js(strtolower($meta.$details['title'])).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
+			$element .= '<input id="'. esc_attr($meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
+			$element .= '<a id="upload_'. esc_attr(sanitize_title_with_dashes( remove_accents( $details['title'] ) )) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. $var_prefix  . esc_js(strtolower($meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ) ).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
 			$element .= '<script type="text/javascript">';				
-				$element .= 'window.'. $var_prefix . strtolower($meta.$details['title']) .' = jQuery(\''.$edit_class.'#'. $meta.$details['title'].'\');';
+				$element .= 'window.'. $var_prefix . strtolower($meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ) .' = jQuery(\''.$edit_class.'#'. $meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ).'\');';
 			$element .= '</script>';
-		}
-		
-		if($details['type'] != 'upload'){
-			$element .= '<label for="'. esc_attr($details['title']) .'">'. ucfirst($details['title']) .'</label>';
-		}
+		}		
 		
 		if( !empty( $details['description'] ) ){
 			$element .= '<p class="description">'. $details['description'].'</p>';
 		}
+		
+		$element .= '</div><!-- .mb-right-column -->';
 		
 		return $element;
 				
@@ -270,18 +279,28 @@ class Wordpress_Creation_Kit{
 		$nonce = wp_create_nonce( 'wck-add-meta' );
 		?>
 		<div id="<?php echo $meta ?>" style="padding:10px 0;" <?php if( $this->args['single'] ) echo 'class="single"' ?>>
-		<ul class="mb-list-entry-fields">
-		<?php
-		foreach ($fields as $details ){			
-			?>
-				<li>
-					<?php echo self::wck_output_form_field( $meta, $details ); ?>
+			<ul class="mb-list-entry-fields">
+				<?php
+				$element_id = 0;
+				foreach ($fields as $details ){
+					
+					do_action( "wck_before_add_form_{$meta}_element_{$element_id}" );
+					
+					?>
+						<li>
+							<?php echo self::wck_output_form_field( $meta, $details ); ?>
+						</li>
+					<?php
+					
+					do_action( "wck_after_add_form_{$meta}_element_{$element_id}" );
+					
+					$element_id++;
+				}
+				?>
+				<li style="overflow:visible;">
+					<a href="javascript:void(0)" class="button-primary" onclick="addMeta('<?php echo esc_js($meta); ?>', '<?php echo esc_js($post->ID); ?>', '<?php echo esc_js($nonce); ?>')"><span>Add Entry</span></a>
 				</li>
-			<?php
-		}
-		?>
-		<li><a href="javascript:void(0)" class="button mbadd" onclick="addMeta('<?php echo esc_js($meta); ?>', '<?php echo esc_js($post->ID); ?>', '<?php echo esc_js($nonce); ?>')"><span>&nbsp;</span></a></li>
-		</ul>
+			</ul>
 		</div>
 		<?php
 	}
@@ -320,24 +339,24 @@ class Wordpress_Creation_Kit{
 			
 			foreach($results[$element_id] as $key => $value){				
 				$details = $fields[$i];
+				
+				$form = apply_filters( "wck_before_update_form_{$meta}_element_{$i}", $form, $element_id );
+				
 				$form .= '<li>';
 				
 				$form .= self::wck_output_form_field( $meta, $details, $value, 'edit_form' ); 
-				/*
-				if ($details['type'] == 'text') { 
-					$form .= '<input type="text" name="'.esc_attr($key).'" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
-				}
-				if ($details['type'] == 'textarea'){
-					$form .= '<textarea name="'.esc_attr($key).'" style="vertical-align:top;" class="mb-textarea mb-field">' . $value . '</textarea>'; 
-				}
-				if ($details['type'] == 'upload'){
-					$form .= '<input name="'.esc_attr($key).'" style="vertical-align:top;" value="'.esc_attr($value).'" class="mb-text-input mb-field"/>'; 
-				}
-				$form .= ' <label for="'.esc_attr($key).'">'.$details['title'].'</label>';*/
+				
 				$form .= '</li>';
+				
+				$form = apply_filters( "wck_after_update_form_{$meta}_element_{$i}", $form, $element_id );
+				
 				$i++;
 			}
-			$form .= '<li><a href="javascript:void(0)" class="button mbupdate" onclick=\'updateMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($element_id).'", "'.esc_js($update_nonce).'")\'><span>&nbsp;</span></a></li>';
+			$form .= '<li style="overflow:visible;">';
+			$form .= '<a href="javascript:void(0)" class="button-primary" onclick=\'updateMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($element_id).'", "'.esc_js($update_nonce).'")\'><span>Save Changes</span></a>';
+			$form .= '<a href="javascript:void(0)" class="button-secondary" style="margin-left:10px;" onclick=\'removeUpdateForm("'. esc_js( 'update_container_'.$meta.'_'.$element_id ). '" )\'><span>Cancel</span></a>';
+			$form .= '</li>';			
+			
 			$form .= '</ul>';
 		}
 		//var_dump($$fields);
@@ -377,22 +396,32 @@ class Wordpress_Creation_Kit{
 		
 		
 		if($results != null){
-			$list .= '<thead><tr><th>Content</th><th>Edit</th><th>Delete</th></tr></thead>';
+			$list .= '<thead><tr><th>#</th><th>Content</th><th>Edit</th><th>Delete</th></tr></thead>';
 			$i=0;
 			foreach ($results as $result){			
-			
+				
+				$entry_nr = $i+1;
+				
 				$list .= '<tr id="element_'.$i.'">'; 
+				$list .= '<td style="text-align:center;vertical-align:middle;">'. $entry_nr .'</td>'; 
 				$list .= '<td><ul>';
 				
-				$j = 0;
-				foreach($result as $key => $value){			
+				$j = 0;				
+				
+				foreach($result as $key => $value){
+					
+					$list = apply_filters( "wck_before_listed_{$meta}_element_{$j}", $list, $j );				
+					
 					$details = $fields[$j];
 					$list .= '<li><strong>'.$details['title'].': </strong>'.$value.' </li>';				
 					$j++;
+					
+					$list = apply_filters( "wck_after_listed_{$meta}_element_{$j}", $list, $j );
+					
 				}
 				$list .= '</ul></td>';				
-				$list .= '<td style="text-align:center;vertical-align:middle;"><a href="javascript:void(0)" class="button mbedit" onclick=\'showUpdateFormMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($i).'", "'.esc_js($edit_nonce).'")\'><span>&nbsp</span></a></td>';
-				$list .= '<td style="text-align:center;vertical-align:middle;"><a href="javascript:void(0)" class="button mbdelete" onclick=\'removeMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($i).'", "'.esc_js($delete_nonce).'")\'><span>&nbsp</span></a></td>';
+				$list .= '<td style="text-align:center;vertical-align:middle;"><a href="javascript:void(0)"  onclick=\'showUpdateFormMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($i).'", "'.esc_js($edit_nonce).'")\' title="Edit this item">Edit</a></td>';
+				$list .= '<td style="text-align:center;vertical-align:middle;"><a href="javascript:void(0)" class="mbdelete" onclick=\'removeMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($i).'", "'.esc_js($delete_nonce).'")\' title="Delete this item">Delete</a></td>';
 				/*if($i != 0 && count($results) > 1){
 					$j= $i-1;
 					$list .= '<td><a href="javascript:void(0)" class="button moveup" onclick=\'swapMetaMb("'.$meta.'", "'.$id.'", "'.$i.'", "'. $j .'")\'><span>&nbsp;</span></a></td>';
@@ -411,38 +440,36 @@ class Wordpress_Creation_Kit{
 
 	/* enque the js*/
 	function wck_print_scripts($hook){
+		global $wck_pages_hooknames;
+		
 		if( $this->args['context'] == 'post_meta' ) {
 			if( 'post.php' == $hook || 'post-new.php' == $hook){
 				wp_enqueue_script( 'jquery-ui-draggable' );
 				wp_enqueue_script( 'jquery-ui-droppable' );
 				wp_enqueue_script( 'jquery-ui-sortable' );
 				wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery') );
+				wp_register_style('wordpress-creation-kit-css', plugins_url('/wordpress-creation-kit.css', __FILE__));
+				wp_enqueue_style('wordpress-creation-kit-css');	
 			}
 		}
 		elseif( $this->args['context'] == 'option' ){
-			if( $this->args['post_type'] == $hook ){
+			if( $wck_pages_hooknames[$this->args['post_type']] == $hook ){
 				wp_enqueue_script( 'jquery-ui-draggable' );
 				wp_enqueue_script( 'jquery-ui-droppable' );
 				wp_enqueue_script( 'jquery-ui-sortable' );
-				wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery') );
+				wp_enqueue_script('wordpress-creation-kit', plugins_url('/wordpress-creation-kit.js', __FILE__), array('jquery', 'jquery-ui-draggable', 'jquery-ui-droppable', 'jquery-ui-sortable' ) );
+				wp_register_style('wordpress-creation-kit-css', plugins_url('/wordpress-creation-kit.css', __FILE__));
+				wp_enqueue_style('wordpress-creation-kit-css');	
 			}
 		}
-	}
-	
-
-	/* print css*/
-	function wck_print_css(){
-		wp_register_style('wordpress-creation-kit-css', plugins_url('/wordpress-creation-kit.css', __FILE__));
-		wp_enqueue_style('wordpress-creation-kit-css');	
-	}
-	
+	}	
 
 	/* ajax add a reccord to the meta */
 	function wck_add_meta(){
 		check_ajax_referer( "wck-add-meta" );	
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
-		$values = $_POST['values'];
+		$values = $_POST['values'];		
 		
 		if( $this->args['context'] == 'post_meta' )
 			$results = get_post_meta($id, $meta, true);
@@ -881,8 +908,7 @@ class Wordpress_Creation_Kit{
 		}
 		
 		return $wck_meta_boxes;
-	}
-	
+	}	
 }
 
 /* WPML Compatibility */
@@ -994,7 +1020,7 @@ public $hookname ( for required for 'page_type' => 'menu_page' ) string used int
 				 or false if the user does not have the capability required.  				
 */
 
-class WCK_Page_Creator{
+class WCK_CPTC_WCK_Page_Creator{
 
 	private $defaults = array(
 							'page_type' => 'menu_page',
@@ -1015,7 +1041,7 @@ class WCK_Page_Creator{
 	function __construct( $args ) {	
 
 		/* Global that will hold all the arguments for all the menu pages */
-		global $wck_pages;
+		global $wck_pages;		
 		
 		/* Merge the input arguments and the defaults. */
 		$this->args = wp_parse_args( $args, $this->defaults );
@@ -1032,24 +1058,68 @@ class WCK_Page_Creator{
 	 * Function that creates the admin page
 	 */
 	function wck_page_init(){			
+		global $wck_pages_hooknames;
 		
 		/* Create the page using either add_menu_page or add_submenu_page functions depending on the 'page_type' parameter. */
 		if( $this->args['page_type'] == 'menu_page' ){
 			$this->hookname = add_menu_page( $this->args['page_title'], $this->args['menu_title'], $this->args['capability'], $this->args['menu_slug'], array( &$this, 'wck_page_template' ), $this->args['icon_url'], $this->args['position'] );
+			
+			$wck_pages_hooknames[$this->args['menu_slug']] = $this->hookname;
 		}
 		else if( $this->args['page_type'] == 'submenu_page' ){
 			$this->hookname = add_submenu_page( $this->args['parent_slug'], $this->args['page_title'], $this->args['menu_title'], $this->args['capability'], $this->args['menu_slug'], array( &$this, 'wck_page_template' ) );
+			
+			$wck_pages_hooknames[$this->args['menu_slug']] = $this->hookname;
 		}
 
 		/* Create a hook for adding meta boxes. */
 		add_action( "load-{$this->hookname}", array( &$this, 'wck_settings_page_add_meta_boxes' ) );
+		/* Load the JavaScript needed for the screen. */
+		add_action( 'admin_enqueue_scripts', array( &$this, 'wck_page_enqueue_scripts' ) );
+		add_action( "admin_head-{$this->hookname}", array( &$this, 'wck_page_load_scripts' ) );
 	}
 	
 	/**
 	 * Do action 'add_meta_boxes'. This hook isn't executed bu  default on a admin page so we have ot add it.
 	 */
 	function wck_settings_page_add_meta_boxes() {					
-		do_action( 'add_meta_boxes', $this->hookname );
+		do_action( 'add_meta_boxes', $this->hookname );		
+	}
+	
+	/**
+	 * Loads the JavaScript files required for managing the meta boxes on the theme settings
+	 * page, which allows users to arrange the boxes to their liking.
+	 *
+	 * @global string $bareskin_settings_page. The global setting page (returned by add_theme_page in function
+	 * bareskin_settings_page_init ).
+	 * @since 1.0.0
+	 * @param string $hook The current page being viewed.
+	 */
+	function wck_page_enqueue_scripts( $hook ) {		
+		if ( $hook == $this->hookname ) {
+			wp_enqueue_script( 'common' );
+			wp_enqueue_script( 'wp-lists' );
+			wp_enqueue_script( 'postbox' );
+		}
+	}
+	
+	/**
+	 * Loads the JavaScript required for toggling the meta boxes on the theme settings page.
+	 *
+	 * @global string $bareskin_settings_page. The global setting page (returned by add_theme_page in function
+	 * bareskin_settings_page_init ).
+	 * @since 1.0.0
+	 */
+	function wck_page_load_scripts() {		
+		?>
+		<script type="text/javascript">
+			//<![CDATA[
+			jQuery(document).ready( function($) {
+				$('.if-js-closed').removeClass('if-js-closed').addClass('closed');
+				postboxes.add_postbox_toggles( '<?php echo $this->hookname; ?>' );
+			});
+			//]]>
+		</script><?php
 	}
 
 	/**
@@ -1063,6 +1133,9 @@ class WCK_Page_Creator{
 			<h2><?php echo $this->args['page_title'] ?></h2>			
 			
 			<div id="poststuff">
+			
+				<?php wp_nonce_field( 'closedpostboxes', 'closedpostboxesnonce', false ); ?>
+				<?php wp_nonce_field( 'meta-box-order', 'meta-box-order-nonce', false ); ?>
 			
 				<?php do_action( 'wck_before_meta_boxes', $this->hookname ); ?>
 				

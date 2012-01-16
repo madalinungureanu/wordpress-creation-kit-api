@@ -1,3 +1,25 @@
+.mb-list-entry-fields li{
+	margin-bottom:15px;
+	clear:both;
+	overflow:hidden;
+}
+
+.mb-right-column{
+	padding-left:200px;
+}
+
+.field-label{
+	width:190px;
+	float:left;
+	min-height:34px;
+	font-weight:bold;
+	padding-right:10px;
+}
+
+.mb-right-column label{
+	padding:0 6px 0 3px;
+}
+
 #mb-ajax-loading{
 	position:absolute;
 	top:0;
@@ -7,29 +29,12 @@
 	background:url(images/ajax-loader.gif) center center no-repeat;	z-index:999;
 }
 
-.mbedit span{
-	padding:0px 5px;
-	background:url(images/settings.png) center center no-repeat;
+.mbdelete{
+	color:#BC0B0B;
 }
-.mbdelete span{
-	padding:0px 5px;
-	background:url(images/delete.png) center center no-repeat;
-}
-.mbadd{
-	display:inline-block !important;
-	padding:10px 20px !important;
-}
-.mbadd span{
-	padding:0px 5px;
-	background:url(images/plus.png) center center no-repeat;
-}
-.mbupdate{
-	display:inline-block !important;
-	padding:10px 20px !important;
-}
-.mbupdate span{
-	padding:2px 8px;
-	background:url(images/save.png) center center no-repeat;
+
+.mbdelete:hover{
+	color:#FF0000;
 }
 
 .mb-list-entry-fields{

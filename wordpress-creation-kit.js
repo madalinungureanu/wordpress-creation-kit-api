@@ -28,10 +28,12 @@ function addMeta(value, id, nonce){
 		
 		else		
 			values[key.toString()] = jQuery(this).val().toString();
-	});	
+	});
+
+	console.log(values);
 	
 	jQuery.post( ajaxurl ,  { action:"wck_add_meta"+value, meta:value, id:id, values:values, _ajax_nonce:nonce}, function(response) {	
-			//alert(response);
+			console.log(response);
 			/* refresh the list */
 			jQuery.post( ajaxurl ,  { action:"wck_refresh_list"+value, meta:value, id:id}, function(response) {					
 				
@@ -145,16 +147,23 @@ jQuery(mb_sortable_elements);
 
 /* show the update form */
 function showUpdateFormMeta(value, id, element_id, nonce){
-	jQuery('#'+value).parent().css({'opacity':'0.4', 'position':'relative'}).append('<div id="mb-ajax-loading"></div>');
-	
-	jQuery( '#container_' + value + " tbody" ).sortable("disable");
-	
-	jQuery.post( ajaxurl ,  { action:"wck_show_update"+value, meta:value, id:id, element_id:element_id, _ajax_nonce:nonce}, function(response) {	
-			//jQuery('#container_'+value+' #element_'+element_id).append(response);
-			jQuery(response).insertAfter('#container_'+value+' #element_'+element_id);
-			jQuery('#'+value).parent().css('opacity','1');
-			jQuery('#mb-ajax-loading').remove();
-		});	
+	if( jQuery( '#update_container_' + value + '_' + element_id ).length == 0 ){
+		jQuery('#'+value).parent().css({'opacity':'0.4', 'position':'relative'}).append('<div id="mb-ajax-loading"></div>');
+		
+		jQuery( '#container_' + value + " tbody" ).sortable("disable");
+		
+		jQuery.post( ajaxurl ,  { action:"wck_show_update"+value, meta:value, id:id, element_id:element_id, _ajax_nonce:nonce}, function(response) {	
+				//jQuery('#container_'+value+' #element_'+element_id).append(response);
+				jQuery(response).insertAfter('#container_'+value+' #element_'+element_id);
+				jQuery('#'+value).parent().css('opacity','1');
+				jQuery('#mb-ajax-loading').remove();
+		});
+	}
+}
+
+/* remove the update form */
+function removeUpdateForm( id ){
+	jQuery( '#'+id ).remove();
 }
 
 /* update reccord */
