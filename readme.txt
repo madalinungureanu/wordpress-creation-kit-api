@@ -42,7 +42,12 @@ Default Parameters
 	'meta_array' => array(),
 	'page_template' => '',
 	'post_id' => '',
-	'single' => false ?> 
+	'single' => false,
+	'wpml_compatibility' => false,
+	'sortable' => true,
+	'context' => 'post_meta'
+	)	
+?> 
 	
 Parameters
 
@@ -84,19 +89,41 @@ $post_id
 $single 
 	(boolean) (optional) Set this to true if you don't want a repeater box and you will be able to enter just one value.
 
-    Default: false 
+    Default: false	
 	
-wpml_compatibility
+$wpml_compatibility
 	(boolean) (optional) Set this to true if you want to enable wpml compatibility
+		
+$sortable
+	(boolean) (optional) Wheater or not the fields in a repeater box are sortable.
+
+    Default: true 
+	
+$context
+	(string) (optional) WCK API can add data as meta or as option depending on the context. Using 'post_meta' will add data as post meta and using 'option' will add data as option
+
+    Default: 'post_meta' 
+
+Parameters for meta_array
+
+'title' 			(string) Title of the field.
+'type' 				(string) The field type. Possible values: 'text', 'textarea', 'select', 'checkbox', 'radio', 'upload'.
+'description'		(string) The description of the field.
+'required'			(boolean) true if the field is required.
+'default'			(string) If you want the string to have a default value enter it here. For Checkboxes if there are multiple
+							 values separete them with a ",".
+'default-option'	(boolean) true if you want Select to have a default option.
+'options'			(array) Options for field types "select", "checkbox" and "radio". 
+	
 	
 How to add into a plugin:
 
-1. Copy the foldder "custom-fields-creator" into the plugin dir
-2. Change the class name "Wordpress_Creation_Kit" if multiple plugins use custom-fields-creator on the same site.
-3. Include "custom-fields-creator.php" into the plugin file 
+1. Copy the foldder "wordpress-creation-kit-api" into the plugin dir
+2. Change the class name "Wordpress_Creation_Kit" if multiple plugins use wordpress-creation-kit-api on the same site.
+3. Include "wordpress-creation-kit.php" into the plugin file 
 	
 	/* include Custom Fields Creator API */
-	require_once('custom-fields-creator/custom-fields-creator.php');
+	require_once('wordpress-creation-kit/wordpress-creation-kit.php');
 
 4. Use the API as in Exampe 1, in your plugin file or functions or whatever fits the situation.
 

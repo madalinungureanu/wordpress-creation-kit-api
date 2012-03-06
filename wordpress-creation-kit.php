@@ -44,7 +44,7 @@ $meta = get_post_meta( $post->ID, 'rmscontent', true );
 
 */
 
-class Wordpress_Creation_Kit{
+class WCK_CFC_Wordpress_Creation_Kit{
 	
 	private $defaults = array(
 							'metabox_id' => '',
@@ -82,6 +82,7 @@ class Wordpress_Creation_Kit{
 		add_action("wp_ajax_wck_update_meta".$this->args['meta_name'], array( &$this, 'wck_update_meta') );
 		add_action("wp_ajax_wck_show_update".$this->args['meta_name'], array( &$this, 'wck_show_update_form') );
 		add_action("wp_ajax_wck_refresh_list".$this->args['meta_name'], array( &$this, 'wck_refresh_list') );
+		add_action("wp_ajax_wck_refresh_entry".$this->args['meta_name'], array( &$this, 'wck_refresh_entry') );
 		add_action("wp_ajax_wck_add_form".$this->args['meta_name'], array( &$this, 'wck_add_form') );
 		add_action("wp_ajax_wck_remove_meta".$this->args['meta_name'], array( &$this, 'wck_remove_meta') );
 		//add_action("wp_ajax_swap_meta_mb", array( & $this, 'mb_swap_meta') );
@@ -188,7 +189,10 @@ class Wordpress_Creation_Kit{
 		}
 		
 		
-		$element .= '<label for="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" class="field-label">'. ucfirst($details['title']) .':</label>';
+		$element .= '<label for="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" class="field-label">'. ucfirst($details['title']) .':';
+		if( $details['required'] )
+			$element .= '<span class="required">*</span>';
+		$element .= '</label>';
 		
 		$element .= '<div class="mb-right-column">';
 		
@@ -204,7 +208,7 @@ class Wordpress_Creation_Kit{
 			$element .= '<select name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'"  id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" class="mb-select mb-field" >';
 			
 			if( !empty( $details['default-option'] ) && $details['default-option'] )
-				$element .= '<option value="default">Select</option>';
+				$element .= '<option value="">Select</option>';
 			
 			if( !empty( $details['options'] ) ){
 					foreach( $details['options'] as $option ){
@@ -223,7 +227,7 @@ class Wordpress_Creation_Kit{
 						
 						if ( strpos($value, $option) !== false ) 
 							$found = true;
-						$element .= '<input type="checkbox" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' . $option ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-checkbox mb-field" /><label for="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' .$option ) ) ) .'">'. $option .'</label><br />' ;
+						$element .= '<div><input type="checkbox" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' . $option ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-checkbox mb-field" /><label for="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' .$option ) ) ) .'">'. $option .'</label></div>' ;
 					}
 			}
 			
@@ -237,7 +241,7 @@ class Wordpress_Creation_Kit{
 						
 						if ( strpos($value, $option) !== false ) 
 							$found = true;
-						$element .= '<input type="radio" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' . $option ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-radio mb-field" /><label for="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' .$option ) ) ) .'">'. $option .'</label><br />';
+						$element .= '<div><input type="radio" name="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'" id="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' . $option ) ) ) .'" value="'. $option .'"  '. checked( $found, true, false ) .'class="mb-radio mb-field" /><label for="'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] . '_' .$option ) ) ) .'">'. $option .'</label></div>';
 					}
 			}
 			
@@ -245,10 +249,10 @@ class Wordpress_Creation_Kit{
 		
 		
 		if($details['type'] == 'upload'){
-			$element .= '<input id="'. esc_attr($meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
-			$element .= '<a id="upload_'. esc_attr(sanitize_title_with_dashes( remove_accents( $details['title'] ) )) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. $var_prefix  . esc_js(strtolower($meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ) ).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
+			$element .= '<input id="'. esc_attr( str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $meta . $details['title'] ) ) ) ) .'" type="text" size="36" name="'. esc_attr( sanitize_title_with_dashes( remove_accents ( $details['title'] ) ) ) .'" value="'. $value .'" class="mb-text-input mb-field"/>';
+			$element .= '<a id="upload_'. esc_attr(sanitize_title_with_dashes( remove_accents( $details['title'] ) )) .'_button" class="button" onclick="tb_show(\'\', \'media-upload.php?type=file&amp;mb_type='. $var_prefix  . esc_js(strtolower( str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $meta . $details['title'] ) ) ) ) ).'&amp;TB_iframe=true\');">Upload '. $details['title'] .' </a>';
 			$element .= '<script type="text/javascript">';				
-				$element .= 'window.'. $var_prefix . strtolower($meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ) .' = jQuery(\''.$edit_class.'#'. $meta.str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ).'\');';
+				$element .= 'window.'. $var_prefix . strtolower( str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $meta . $details['title'] ) ) ) ) .' = jQuery(\''.$edit_class.'#'. str_replace( '-', '_', sanitize_title_with_dashes( remove_accents( $meta . $details['title'] ) ) ).'\');';
 			$element .= '</script>';
 		}		
 		
@@ -287,7 +291,7 @@ class Wordpress_Creation_Kit{
 					do_action( "wck_before_add_form_{$meta}_element_{$element_id}" );
 					
 					?>
-						<li>
+						<li class="row-<?php echo esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) ?>">
 							<?php echo self::wck_output_form_field( $meta, $details ); ?>
 						</li>
 					<?php
@@ -317,38 +321,33 @@ class Wordpress_Creation_Kit{
 	 */
 	function mb_update_form($fields, $meta, $id, $element_id){
 		
-		$update_nonce = wp_create_nonce( 'wck-update-entry' );
-		
-		// create the $fields_myname variable dinamically so we can use the global one
-		//$fields = 'fields_'.$meta;
-		//global $$fields;
+		$update_nonce = wp_create_nonce( 'wck-update-entry' );	
 				
 		if( $this->args['context'] == 'post_meta' )
 			$results = get_post_meta($id, $meta, true);
 		else if ( $this->args['context'] == 'option' )
-			$results = get_option( $meta );
+			$results = get_option( $meta );		
 		
-		
-		$nr = count($results[$element_id])+4;
 		$form = '';
-		$form .= '<tr id="update_container_'.$meta.'_'.$element_id.'"><td colspan="'.$nr.'">';
+		$form .= '<tr id="update_container_'.$meta.'_'.$element_id.'"><td colspan="4">';
 		
 		if($results != null){
 			$i = 0;
-			$form .= '<ul class="mb-list-entry-fields">';
+			$form .= '<ul class="mb-list-entry-fields">';			
 			
-			foreach($results[$element_id] as $key => $value){				
-				$details = $fields[$i];
+			foreach( $fields as $field ){				
+				$details = $field;
+				$value = $results[$element_id][sanitize_title_with_dashes( remove_accents( $details['title'] ) )];
 				
-				$form = apply_filters( "wck_before_update_form_{$meta}_element_{$i}", $form, $element_id );
+				$form = apply_filters( "wck_before_update_form_{$meta}_element_{$i}", $form, $element_id, $value );
 				
-				$form .= '<li>';
+				$form .= '<li class="row-'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'">';
 				
 				$form .= self::wck_output_form_field( $meta, $details, $value, 'edit_form' ); 
 				
 				$form .= '</li>';
 				
-				$form = apply_filters( "wck_after_update_form_{$meta}_element_{$i}", $form, $element_id );
+				$form = apply_filters( "wck_after_update_form_{$meta}_element_{$i}", $form, $element_id, $value );
 				
 				$i++;
 			}
@@ -376,10 +375,7 @@ class Wordpress_Creation_Kit{
 	 * the meta to apear in custom fields box.
 	 * @param int $id Post id
 	 */
-	function wck_output_meta_content($meta, $id, $fields){
-		
-		$edit_nonce = wp_create_nonce( 'wck-edit-entry' );
-		$delete_nonce = wp_create_nonce( 'wck-delete-entry' );		
+	function wck_output_meta_content($meta, $id, $fields){		
 		
 		if( $this->args['context'] == 'post_meta' )
 			$results = get_post_meta($id, $meta, true);
@@ -396,45 +392,50 @@ class Wordpress_Creation_Kit{
 		
 		
 		if($results != null){
-			$list .= '<thead><tr><th>#</th><th>Content</th><th>Edit</th><th>Delete</th></tr></thead>';
+			$list .= '<thead><tr><th class="wck-number">#</th><th>Content</th><th class="wck-edit">Edit</th><th class="wck-delete">Delete</th></tr></thead>';
 			$i=0;
 			foreach ($results as $result){			
 				
-				$entry_nr = $i+1;
+				$list .= self::wck_output_entry_content( $meta, $id, $fields, $results, $i );
 				
-				$list .= '<tr id="element_'.$i.'">'; 
-				$list .= '<td style="text-align:center;vertical-align:middle;">'. $entry_nr .'</td>'; 
-				$list .= '<td><ul>';
-				
-				$j = 0;				
-				
-				foreach($result as $key => $value){
-					
-					$list = apply_filters( "wck_before_listed_{$meta}_element_{$j}", $list, $j );				
-					
-					$details = $fields[$j];
-					$list .= '<li><strong>'.$details['title'].': </strong>'.$value.' </li>';				
-					$j++;
-					
-					$list = apply_filters( "wck_after_listed_{$meta}_element_{$j}", $list, $j );
-					
-				}
-				$list .= '</ul></td>';				
-				$list .= '<td style="text-align:center;vertical-align:middle;"><a href="javascript:void(0)"  onclick=\'showUpdateFormMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($i).'", "'.esc_js($edit_nonce).'")\' title="Edit this item">Edit</a></td>';
-				$list .= '<td style="text-align:center;vertical-align:middle;"><a href="javascript:void(0)" class="mbdelete" onclick=\'removeMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($i).'", "'.esc_js($delete_nonce).'")\' title="Delete this item">Delete</a></td>';
-				/*if($i != 0 && count($results) > 1){
-					$j= $i-1;
-					$list .= '<td><a href="javascript:void(0)" class="button moveup" onclick=\'swapMetaMb("'.$meta.'", "'.$id.'", "'.$i.'", "'. $j .'")\'><span>&nbsp;</span></a></td>';
-				}
-				if($i != count($results)-1){
-					$j= $i+1;
-					$list .= '<td><a href="javascript:void(0)" class="button movedown" onclick=\'swapMetaMb("'.$meta.'", "'.$id.'", "'.$i.'", "'. $j .'")\'><span>&nbsp;</span></a></td>';
-				}*/
-				$list .= '</tr>';
 				$i++;
 			}
 		}
 		$list .= '</table>';
+		return $list;
+	}
+	
+	function wck_output_entry_content( $meta, $id, $fields, $results, $element_id ){
+		$edit_nonce = wp_create_nonce( 'wck-edit-entry' );
+		$delete_nonce = wp_create_nonce( 'wck-delete-entry' );		
+		$entry_nr = $element_id +1;
+		
+		$list = '';
+		$list .= '<tr id="element_'.$element_id.'">'; 
+		$list .= '<td style="text-align:center;vertical-align:middle;" class="wck-number">'. $entry_nr .'</td>'; 
+		$list .= '<td><ul>';
+		
+		$j = 0;				
+		
+		foreach( $fields as $field ){
+			$details = $field;
+			$value = $results[$element_id][sanitize_title_with_dashes( remove_accents( $details['title'] ) )];
+			$display_value = '<pre>'.htmlspecialchars( $results[$element_id][sanitize_title_with_dashes( remove_accents( $details['title'] ) )] ) . '</pre>';
+			
+			$list = apply_filters( "wck_before_listed_{$meta}_element_{$j}", $list, $element_id, $value );		
+			
+			$list .= '<li class="row-'. esc_attr( sanitize_title_with_dashes( remove_accents( $details['title'] ) ) ) .'"><strong>'.$details['title'].': </strong>'.$display_value.' </li>';							
+			
+			$list = apply_filters( "wck_after_listed_{$meta}_element_{$j}", $list, $element_id, $value );
+			
+			$j++;					
+		}
+		$list .= '</ul></td>';				
+		$list .= '<td style="text-align:center;vertical-align:middle;" class="wck-edit"><a href="javascript:void(0)" class="button-secondary"  onclick=\'showUpdateFormMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($element_id).'", "'.esc_js($edit_nonce).'")\' title="Edit this item">Edit</a></td>';
+		$list .= '<td style="text-align:center;vertical-align:middle;" class="wck-delete"><a href="javascript:void(0)" class="mbdelete" onclick=\'removeMeta("'.esc_js($meta).'", "'.esc_js($id).'", "'.esc_js($element_id).'", "'.esc_js($delete_nonce).'")\' title="Delete this item">Delete</a></td>';
+		
+		$list .= '</tr>';
+	
 		return $list;
 	}
 
@@ -462,14 +463,46 @@ class Wordpress_Creation_Kit{
 				wp_enqueue_style('wordpress-creation-kit-css');	
 			}
 		}
-	}	
+	}
+
+	/* Helper function for required fields */
+	function wck_test_required( $meta, $values, $id ){
+		$fields = $this->args['meta_array'];
+		$required_fields = array();
+		$required_fields_with_errors = array();
+		$required_message = '';
+		
+		foreach( $fields as $field ){
+			if( $field['required'] )
+				$required_fields[sanitize_title_with_dashes( remove_accents ( $field['title'] ) )] = $field['title'];
+		}
+		
+		foreach( $values as $key => $value ){
+			if( array_key_exists( $key, $required_fields ) && apply_filters( "wck_required_test_{$meta}_{$key}", empty( $value ), $value, $id ) ){
+				$required_message .= apply_filters( "wck_required_message_{$meta}_{$key}", "Please enter a value for the required field $required_fields[$key] \n", $value );
+				$required_fields_with_errors[] = $key;
+			}
+		}	
+		
+		if( $required_message != '' ){
+			header( 'Content-type: application/json' );
+			die( json_encode( array( 'error' => $required_message, 'errorfields' => $required_fields_with_errors ) ) );
+		}
+		
+	}
+	
 
 	/* ajax add a reccord to the meta */
 	function wck_add_meta(){
 		check_ajax_referer( "wck-add-meta" );	
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
-		$values = $_POST['values'];		
+		$values = $_POST['values'];
+		
+		$values = apply_filters( "wck_add_meta_filter_values_{$meta}", $values );
+		
+		/* check required fields */
+		self::wck_test_required( $meta, $values, $id );		
 		
 		if( $this->args['context'] == 'post_meta' )
 			$results = get_post_meta($id, $meta, true);
@@ -477,6 +510,8 @@ class Wordpress_Creation_Kit{
 			$results = get_option( $meta );
 		
 		$results[] = $values;
+		
+		do_action( 'wck_before_add_meta', $meta, $id, $values );
 		
 		if( $this->args['context'] == 'post_meta' )
 			update_post_meta($id, $meta, $results);
@@ -505,7 +540,10 @@ class Wordpress_Creation_Kit{
 		$element_id = $_POST['element_id'];	
 		$values = $_POST['values'];
 		
+		$values = apply_filters( "wck_update_meta_filter_values_{$meta}", $values, $element_id );
 		
+		/* check required fields */
+		self::wck_test_required( $meta, $values, $id );
 		
 		if( $this->args['context'] == 'post_meta' )
 			$results = get_post_meta($id, $meta, true);
@@ -514,7 +552,7 @@ class Wordpress_Creation_Kit{
 		
 		$results[$element_id] = $values;
 		
-		
+		do_action( 'wck_before_update_meta', $meta, $id, $values, $element_id );
 		
 		if( $this->args['context'] == 'post_meta' )
 			update_post_meta($id, $meta, $results);
@@ -540,6 +578,27 @@ class Wordpress_Creation_Kit{
 		$meta = $_POST['meta'];
 		$id = absint($_POST['id']);
 		echo self::wck_output_meta_content($meta, $id, $this->args['meta_array']);
+		
+		do_action( "wck_refresh_list_{$meta}" );
+		
+		exit;
+	}
+	
+	/* ajax to refresh an entry content */
+	function wck_refresh_entry(){
+		$meta = $_POST['meta'];
+		$id = absint($_POST['id']);
+		$element_id = $_POST['element_id'];
+		
+		if( $this->args['context'] == 'post_meta' )
+			$results = get_post_meta($id, $meta, true);
+		else if ( $this->args['context'] == 'option' )
+			$results = get_option( $meta );
+		
+		echo self::wck_output_entry_content( $meta, $id, $this->args['meta_array'], $results, $element_id );
+		
+		do_action( "wck_refresh_entry_{$meta}" );
+		
 		exit;
 	}
 	
@@ -580,6 +639,8 @@ class Wordpress_Creation_Kit{
 		/* reset the keys for the array */
 		$results = array_values($results);
 		
+		do_action( 'wck_before_remove_meta', $meta, $id, $element_id );
+		
 		if( $this->args['context'] == 'post_meta' )
 			update_post_meta($id, $meta, $results);
 		else if ( $this->args['context'] == 'option' )
@@ -618,23 +679,6 @@ class Wordpress_Creation_Kit{
 		exit;
 	}
 
-
-
-	/* ajax to swap two reccords */
-	/*function mb_swap_meta(){
-		$meta = $_POST['meta'];
-		$id = $_POST['id'];
-		$element_id = $_POST['element_id'];	
-		$swap_with = $_POST['swap_with'];	
-		$results = get_post_meta($id, $meta, true);
-		
-		$temp = $results[$element_id];
-		$results[$element_id] = $results[$swap_with];
-		$results[$swap_with] = $temp;
-		
-		update_post_meta($id, $meta, $results);
-		exit;
-	}*/
 
 	/* ajax to reorder records */
 	function wck_reorder_meta(){
@@ -911,71 +955,6 @@ class Wordpress_Creation_Kit{
 	}	
 }
 
-/* WPML Compatibility */
-//add_filter('icl_data_from_pro_translation', 'wck_wpml_get_translation');
-/*function wck_wpml_get_translation($translation){
-	global $sitepress_settings;
-	$sitepress_settings['wck_wpml_translation'] = $translation;
-	
-	return $translation;
-}*/
-
-/*add_action('init', 'bnngjnfkjgn');
-function bnngjnfkjgn(){
-	global $sitepress_settings;
-	$wck_wpml_translation = 'asdasdasdasfsadasdas';
-	$sitepress_settings['wck_wpml_translation'] = 'nknd,fgjkdfljgd;lfgl;d';
-	var_dump($sitepress_settings);
-}
-
-add_action('admin_footer', 'jkjkghjkgjhkjgkh');
-function jkjkghjkgjhkjgkh(){
-	global $sitepress_settings;
-	var_dump($sitepress_settings);
-}
-*/
-//add_action( 'icl_pro_translation_saved', 'wck_update_translation_meta_boxes', 10, 2 );
-/*function wck_update_translation_meta_boxes($new_post_id, $translation){
-	global $sitepress_settings;
-	//$translation = $sitepress_settings['wck_wpml_translation'];
-	var_dump($translation);
-	
-	$custom_field_keys = get_post_custom_keys( $translation['original_id'] );
-	$wck_array = array();
-	
-	foreach((array)$sitepress_settings['translation-management']['custom_fields_translation'] as $cf => $op){
-		$cf_name_array = explode( '_', $cf );
-		if( count( $cf_name_array ) >= 4 ){
-			$cf_name = implode( '_', array_slice( $cf_name_array, 1, -2 ) );
-			
-			if( in_array( $cf_name, $custom_field_keys ) && $cf_name_array[0] == 'wckwpml' ){
-				
-				$wck_position = $cf_name_array[ count($cf_name_array) -1 ];
-				$wck_key = $cf_name_array[ count($cf_name_array) -2 ];
-				
-				if ($op == 1) 
-					$wck_array[$cf_name][$wck_position][$wck_key] = get_post_meta($translation['original_id'],$cf,true);
-				elseif( $op == 2 && isset($translation['field-'.$cf] ) ){
-					$field_translation = $translation['field-'.$cf];
-					$field_type = $translation['field-'.$cf.'-type'];
-					if ($field_type == 'custom_field') {
-						$field_translation = str_replace ( '&#0A;', "\n", $field_translation );                                
-						// always decode html entities  eg decode &amp; to &
-						$field_translation = html_entity_decode($field_translation);
-						$wck_array[$cf_name][$wck_position][$wck_key] = $field_translation;
-					}            
-				}
-			}
-		}		
-	}
-	
-	if( !empty( $wck_array ) ){
-		foreach( $wck_array as $wck_key => $wck_meta ){
-			update_post_meta( $new_post_id, $wck_key, $wck_meta );
-		}
-	}	
-	
-}*/
 
 /*
 Helper class that creates admin menu pages ( both top level menu pages and submenu pages )
@@ -1020,7 +999,7 @@ public $hookname ( for required for 'page_type' => 'menu_page' ) string used int
 				 or false if the user does not have the capability required.  				
 */
 
-class WCK_Page_Creator{
+class WCK_CFC_WCK_Page_Creator{
 
 	private $defaults = array(
 							'page_type' => 'menu_page',
@@ -1031,7 +1010,8 @@ class WCK_Page_Creator{
 							'icon_url' => '',
 							'position' => '',
 							'parent_slug' => '',
-							'priority' => 10
+							'priority' => 10,
+							'network_page' => false
 						);
 	private $args;
 	public $hookname;
@@ -1049,10 +1029,15 @@ class WCK_Page_Creator{
 		/* Add the settings for this page to the global object */
 		$wck_pages[$this->args['page_title']] = $this->args;
 		
-		/* Hook the page function to 'admin_menu'. */
-		add_action( 'admin_menu', array( &$this, 'wck_page_init' ), $this->args['priority'] );				
+		if( !$this->args['network_page'] ){		
+			/* Hook the page function to 'admin_menu'. */
+			add_action( 'admin_menu', array( &$this, 'wck_page_init' ), $this->args['priority'] );
+		}
+		else{
+			/* Hook the page function to 'admin_menu'. */
+			add_action( 'network_admin_menu', array( &$this, 'wck_page_init' ), $this->args['priority'] );
+		}				
 	}
-
 	
 	/**
 	 * Function that creates the admin page
@@ -1140,9 +1125,11 @@ class WCK_Page_Creator{
 				<?php do_action( 'wck_before_meta_boxes', $this->hookname ); ?>
 				
 				<div class="metabox-holder">
-					<div class="post-box-container column-1 normal"><?php do_meta_boxes( $this->hookname, 'normal', null ); ?></div>
 					<div class="post-box-container column-2 side"><?php do_meta_boxes( $this->hookname, 'side', null ); ?></div>
-					<div class="post-box-container column-3 advanced"><?php do_meta_boxes( $this->hookname, 'advanced', null ); ?></div>
+					<div class="wck-post-body">
+						<div class="post-box-container column-1 normal"><?php do_meta_boxes( $this->hookname, 'normal', null ); ?></div>
+						<div class="post-box-container column-3 advanced"><?php do_meta_boxes( $this->hookname, 'advanced', null ); ?></div>					</div>
+					
 				</div>			
 				
 				<?php do_action( 'wck_after_meta_boxes', $this->hookname ); ?>
